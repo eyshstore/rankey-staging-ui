@@ -25,8 +25,8 @@ function LoginPage({ setIsLoggedIn }) {
   };
 
   return (
-    <div className="min-h-screen min-w-screen bg-gray-900 flex items-center justify-center">
-      <div className="max-w-md w-full bg-gray-800 shadow-md rounded-lg p-8">
+    <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+      <div className="bg-gray-800 shadow-md rounded-lg p-8">
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="sm:col-span-4">
             <label htmlFor="username" className="block text-sm/6 font-medium text-gray-200">Username</label>
@@ -63,7 +63,7 @@ function LoginPage({ setIsLoggedIn }) {
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-yellow-100 text-white rounded-md hover:bg-indigo-700 transition duration-50"
+            className="button w-full p-2 bg-indigo-700 hover:bg-indigo-900 hover:cursor-pointer text-white rounded-md"
           >
             Login
           </button>
