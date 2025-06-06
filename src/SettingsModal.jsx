@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const SettingsModal = ({ isOpen, onClose }) => {
+  const [currentScrapingProvider, setCurrentScrapingProvider] = useState(-1);
   const scrapingProviders = [
-
+    { name: "ScrapingAnt", key: "AHYU-65GH", concurrentRequestsOccupied: 5, concurrentRequestsMax: 10, requestsRemaining: 10000 },
+    { name: "ScrapingBee", key: "AHYU-65GH", concurrentRequestsOccupied: 0, concurrentRequestsMax: 10, requestsRemaining: 10000 },
   ];
 
   if (!isOpen) return null;
@@ -32,29 +34,35 @@ const SettingsModal = ({ isOpen, onClose }) => {
               </tr>
             </thead>
             <tbody>
-              <tr className="bg-indigo-500">
-                <td className="border-b border-gray-200 p-4">ScrapingBee</td>
-                <td className="border-b border-gray-200 p-4">
-                  <input className="border border-white p-2 rounded-sm" type="text" placeholder="U6I7-78MI" />
-                </td>
-                <td className="border-b border-gray-200 p-4">0 / 10</td>
-                <td className="border-b border-gray-200 p-4">10,245</td>
-              </tr>
-              <tr className="hover:bg-indigo-800">
-                <td className="border-b border-gray-200 p-4">Scraping API</td>
-                <td className="border-b border-gray-200 p-4">---</td>
-                <td className="border-b border-gray-200 p-4">---</td>
-                <td className="border-b border-gray-200 p-4">---</td>
-              </tr>
-              <tr className="hover:bg-indigo-800">
-                <td className="border-b border-gray-200 p-4">ScrapingStack</td>
-                <td className="border-b border-gray-200 p-4">---</td>
-                <td className="border-b border-gray-200 p-4">---</td>
-                <td className="border-b border-gray-200 p-4">----</td>
-              </tr>
+              {scrapingProviders.length ? (
+                scrapingProviders.map((provider, index) => (
+                  <tr
+                    key={provider.name}
+                    className={index === currentScrapingProvider ? "bg-indigo-500" : "hover:bg-indigo-800 hover:cursor-pointer"}
+                    onClick={() => setCurrentScrapingProvider(index)}
+                  >
+                    <td className="border-b border-gray-200 p-4">{provider.name}</td>
+                    <td className="border-b border-gray-200 p-4">
+                      <input
+                        className="border border-white p-2 rounded-sm"
+                        type="text"
+                        placeholder="API Key"
+                        defaultValue={provider.key}
+                      />
+                    </td>
+                    <td className="border-b border-gray-200 p-4">{`${provider.concurrentRequestsOccupied} / ${provider.concurrentRequestsMax}`}</td>
+                    <td className="border-b border-gray-200 p-4">{provider.requestsRemaining.toLocaleString()}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="border-b border-gray-200 p-4 text-center">
+                    No scraping providers available
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
-
         </div>
       </div>
     </div>

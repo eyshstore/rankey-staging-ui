@@ -1,6 +1,6 @@
 import React from "react";
 
-const CategoryDetails = ({ mainCategory }) => {
+const RegionCategoriesDetails = ({ mainCategory }) => {
   return (
     <div className="bg-gray-800 p-4 rounded">
       <h2 className="text-lg font-bold mb-2">{mainCategory.name}</h2>
@@ -26,4 +26,4 @@ const CategoryDetails = ({ mainCategory }) => {
   );
 }
 
-export default CategoryDetails;
+export default RegionCategoriesDetails;

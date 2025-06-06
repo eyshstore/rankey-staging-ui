@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CategoriesList = ({ mainCategoriesEntries, currentCategoryRegion, setCurrentCategoryRegion }) => {
+const RegionCategoriesList = ({ mainCategoriesEntries, currentCategoryRegion, setCurrentCategoryRegion }) => {
   const categoryStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
   const selectedCategoryStyle = "bg-indigo-400 border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
 
@@ -45,4 +45,4 @@ const CategoriesList = ({ mainCategoriesEntries, currentCategoryRegion, setCurre
   );
 };
 
-export default CategoriesList;
+export default RegionCategoriesList;

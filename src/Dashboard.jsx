@@ -1,17 +1,24 @@
 import { React, useState } from 'react';
 
-import CategoriesList from './CategoriesList';
-import CategoryDetails from './CategoryDetails';
-import ProductsScanList from './ProductsScanList';
 import SettingsModal from './SettingsModal';
+
+import RegionCategoriesList from './RegionCategoriesList';
+import RegionCategoriesDetails from './RegionCategoriesDetails';
+
+import ScansList from './ScansList';
+import ScanDetails from './ScanDetails';
 
 const Dashboard = () => {
   const [currentSection, setCurrentSection] = useState('');
-  const [currentCategoryRegion, setCurrentCategoryRegion] = useState('');
+  
+  const [currentScanId, setCurrentScanId] = useState('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
+  const [currentScanProductsPagination, setCurrentScanProductsPagination] = useState({ current: 5, total: 10 });
+  const [currentCategoryRegion, setCurrentCategoryRegion] = useState('');
   const mainCategories = {
     "com": {
+      isBeingUpdated: false,
       name: "USA",
       subCategories: [
         { id: 2619526011, name: "Appliances" },
@@ -21,6 +28,7 @@ const Dashboard = () => {
       ]
     },
     "de": {
+      isBeingUpdated: false,
       name: "Germany",
       subCategories: [
         { id: 78689031, name: "Bekleidung" },
@@ -36,20 +44,37 @@ const Dashboard = () => {
     { region: "de", name: "Germany (https://www.amazon.de)", active: false }
   ];
 
+  const [scanProductsPagination, setScanProductsPagination] = useState({ current: 5, total: 10 });
   const productScanEntries = [
-    { id: "a5c1...", type: "Category", region: "Germany", category: "Bekleidung", minRank: 1, maxRank: 10000 },
-    { id: "a5c2...", type: "ASINs", region: "USA", category: "Arts & Crafts", minRank: 1, maxRank: 10000 },
-    { id: "a5c3...", type: "Deals", region: "USA", category: "Appliances", minRank: 1, maxRank: 10000 }
+    { id: "a5c1", type: "Category", region: "Germany", category: "Bekleidung", minRank: 1, maxRank: 10000, state: "enqueued" },
+    { id: "a5c2", type: "ASINs", region: "USA", category: "Arts & Crafts", minRank: 1, maxRank: 10000, state: "enqueued" },
+    { id: "a5c3", type: "Deals", region: "USA", category: "Appliances", minRank: 1, maxRank: 10000, state: "active" }
+  ];
+
+  const scanProducts = [
+    {
+      id: "a5c1",
+      products: [
+        { id: "", asin: "5467HGYU", title: "" },
+        { },
+      ],
+    },
+    {
+
+    }
   ];
 
   const sectionStyle = "w-full text-left p-2 border-b border-white hover:bg-indigo-500 hover:cursor-pointer";
   const selectedSectionStyle = "w-full bg-indigo-400 text-left p-2 border-b border-white hover:bg-indigo-500 hover:cursor-pointer";
 
   let section;
-  if (currentSection == "categories") {
-    section = <CategoriesList mainCategoriesEntries={mainCategoriesEntries} currentCategoryRegion={currentCategoryRegion} setCurrentCategoryRegion={setCurrentCategoryRegion} />;
-  } else if (currentSection == "products") {
-    section = <ProductsScanList productScanEntries={productScanEntries} />;
+  let details;
+  if (currentSection === "categories") {
+    section = <RegionCategoriesList mainCategoriesEntries={mainCategoriesEntries} currentCategoryRegion={currentCategoryRegion} setCurrentCategoryRegion={setCurrentCategoryRegion} />;
+    details = currentCategoryRegion && <RegionCategoriesDetails mainCategory={mainCategories[currentCategoryRegion]} />;
+  } else if (currentSection === "products") {
+    section = <ScansList productScanEntries={productScanEntries} currentScanId={currentScanId} setCurrentScanId={setCurrentScanId} />;
+    details = currentScanId && <ScanDetails scan={productScanEntries.find(entry => entry.id === currentScanId)} />;
   }
 
   return (
@@ -83,13 +108,8 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className="w-1/2 border-r border-white">
-          {section}
-        </div>
-
-        <div className="w-1/2 p-4">
-          { currentCategoryRegion && <CategoryDetails mainCategory={mainCategories[currentCategoryRegion]} /> }
-        </div>
+        <div className="w-1/2 border-r border-white">{ section }</div>
+        <div className="w-1/2">{ details }</div>
       </div>
 
       <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
