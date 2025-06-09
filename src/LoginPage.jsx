@@ -1,26 +1,28 @@
 import { useState } from 'react';
+import useRequest from '../hooks/useRequest.hook';
+import config from './config';
 
 function LoginPage({ setIsLoggedIn }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const { data, error, loading, request } = useRequest();
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-
-    if (!username || !password) {
-      setError('Please enter both username and password.');
-      return;
-    }
-
-    const validUsername = 'admin';
-    const validPassword = 'password123';
-
-    if (username === validUsername && password === validPassword) {
-      setIsLoggedIn(true);
-      setError('');
-    } else {
-      setError('Invalid username or password.');
+    try {
+      await request(`${config.apiBaseUrl}/auth`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include',
+      });
+      console.log();
+      if (data) {
+        setIsLoggedIn(true);
+      }
+    } catch (err) {
+      console.error('Login error:', err);
     }
   };
 
@@ -63,9 +65,10 @@ function LoginPage({ setIsLoggedIn }) {
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
-            className="button w-full p-2 bg-indigo-700 hover:bg-indigo-900 hover:cursor-pointer text-white rounded-md"
+            disabled={loading}
+            className={`button w-full p-2 bg-indigo-700 hover:bg-indigo-900 hover:cursor-pointer text-white rounded-md ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </div>

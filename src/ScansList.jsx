@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ScansList = ({ productScanEntries, currentScanId, setCurrentScanId }) => {
+const ScansList = ({ productScanEntries, currentScanId, setCurrentScanId, onCreateScan }) => {
   const scanStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
   const selectedScanStyle = "bg-indigo-400 border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
 
@@ -13,7 +13,7 @@ const ScansList = ({ productScanEntries, currentScanId, setCurrentScanId }) => {
           stateControls = (
             <button className="bg-red-600 hover:bg-red-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           );
@@ -30,7 +30,6 @@ const ScansList = ({ productScanEntries, currentScanId, setCurrentScanId }) => {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z" />
                 </svg>
-
               </button>
             </>
           );
@@ -39,7 +38,7 @@ const ScansList = ({ productScanEntries, currentScanId, setCurrentScanId }) => {
           stateControls = (
             <button className="bg-indigo-600 hover:bg-indigo-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           );
