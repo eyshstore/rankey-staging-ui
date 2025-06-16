@@ -1,44 +1,53 @@
 import { useState, useCallback } from 'react';
 
 const useRequest = () => {
-  const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  let controller = null;
+  const [controller, setController] = useState(null);
 
   const request = useCallback(async (url, options = {}) => {
     setLoading(true);
     setError(null);
-    setData(null);
 
-    controller = new AbortController();
-    const signal = controller.signal;
+    const newController = new AbortController();
+    setController(newController);
 
     try {
-      const response = await fetch(url, { ...options, signal });
+      const response = await fetch(url, {
+        method: "GET",
+        ...options,
+        signal: newController.signal,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
+
       if (!response.ok) {
-        throw new Error((await response.json()).message || 'Request failed');
+        const errorMessage = await response.json();
+        setError(errorMessage);
+        return;
       }
+
       const result = await response.json();
-      setData(result);
       return result;
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        setError(err.message);
-        throw err;
-      }
+    } catch (error) {
+      setError(error);
     } finally {
       setLoading(false);
+      setController(null);
     }
   }, []);
 
   const cancel = useCallback(() => {
     if (controller) {
       controller.abort();
+      setController(null);
     }
-  }, []);
+  }, [controller]);
 
-  return { data, error, loading, request, cancel };
+  return { error, loading, request, cancel };
 };
 
 export default useRequest;

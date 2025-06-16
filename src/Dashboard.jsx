@@ -1,107 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import SettingsModal from './SettingsModal';
-import RegionCategoriesList from './RegionCategoriesList';
-import RegionCategoriesDetails from './RegionCategoriesDetails';
+
+import DomainsList from './DomainsList';
+import DomainCategoriesDetails from './DomainCategoriesDetails';
+
 import ScansList from './ScansList';
 import ScanDetails from './ScanDetails';
+
 import NewScanModal from './NewScanModal';
+
 import config from './config';
 
 const Dashboard = ({ setIsLoggedIn }) => {
-  const [currentSection, setCurrentSection] = useState('');
-  const [currentScanId, setCurrentScanId] = useState('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
-  const [currentScanProductsPagination, setCurrentScanProductsPagination] = useState({ current: 5, total: 10 });
-  const [currentCategoryRegion, setCurrentCategoryRegion] = useState('');
+
+  const [currentSection, setCurrentSection] = useState('');
+
+  const [currentDomain, setCurrentDomain] = useState('');
+
   const [productScanEntries, setProductScanEntries] = useState([
-    { id: "a5c1", type: "Category", region: "Germany", category: "Bekleidung", minRank: 1, maxRank: 10000, state: "enqueued" },
-    { id: "a5c2", type: "ASINs", region: "USA", category: "Arts & Crafts", minRank: 1, maxRank: 10000, state: "enqueued" },
-    { id: "a5c3", type: "Deals", region: "USA", category: "Appliances", minRank: 1, maxRank: 10000, state: "active" }
+    { id: "a5c1", type: "Category", domain: "de", category: "Bekleidung", minRank: 1, maxRank: 10000, state: "enqueued" },
+    { id: "a5c2", type: "ASINs", domain: "com", category: "Arts & Crafts", minRank: 1, maxRank: 10000, state: "enqueued" },
+    { id: "a5c3", type: "Deals", domain: "com", category: "Appliances", minRank: 1, maxRank: 10000, state: "active" }
   ]);
-  const [mainCategoriesEntries, setMainCategoriesEntries] = useState([]);
-  const [mainCategories, setMainCategories] = useState([
-    {
-      isComplete: false,
-      region: "amazon.com",
-      isCompleted: false,
-      subCategories: [
-        { id: 2619526011, name: "Appliances" },
-        { id: 2617942011, name: "Arts & Crafts" },
-        { id: 15690151, name: "Automotive" },
-        { id: 165797011, name: "Baby" }
-      ]
-    },
-    {
-      isComplete: false,
-      name: "amazon.de",
-      subCategories: [
-        { id: 78689031, name: "Bekleidung" },
-        { id: 931573031, name: "Elektro-Großgeräte" },
-        { id: 78193031, name: "Auto & Motorrad" },
-        { id: 357577011, name: "Baby" }
-      ]
-    }
-  ]);
+  const [currentScanId, setCurrentScanId] = useState('');
 
-  useEffect(() => {
-    const fetchRegions = async () => {
-      try {
-        const response = await fetch(`${config.apiBaseUrl}/amazon/regions`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const data = await response.json();
-        if (data.regions) {
-          const regions = data.regions.map((region, index) => ({
-            region: `https://www.amazon.${region}`,
-            active: index === 0 // Set first region as active by default
-          }));
-          setMainCategoriesEntries(regions);
-          // Update mainCategories with fetched regions, preserving existing subCategories for known regions
-          setMainCategories((prev) => {
-            const newCategories = {};
-            regions.forEach(({ region }) => {
-              const domain = region.split('.').pop();
-              newCategories[domain] = prev[domain] || {
-                isBeingUpdated: false,
-                name: domain.toUpperCase(), // Fallback name
-                subCategories: []
-              };
-            });
-            return newCategories;
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch regions:', error);
-      }
-    };
-    fetchRegions();
-  }, []);
-
-  const scanProducts = [
-    {
-      id: "a5c1",
-      products: [
-        { id: "", asin: "5467HGYU", title: "" },
-        {},
-      ],
-    },
-    {}
-  ];
+  const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const response = await fetch(`${config.apiBaseUrl}/auth/logout`, { method: 'POST', credentials: 'include' });
       const data = await response.json();
       if (data.message === 'Logged out successfully') {
         setIsLoggedIn(false);
       }
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Logout failed: ', error);
     }
   };
 
@@ -115,15 +49,15 @@ const Dashboard = ({ setIsLoggedIn }) => {
   let section;
   let details;
   if (currentSection === "categories") {
-    section = <RegionCategoriesList mainCategoriesEntries={mainCategoriesEntries} currentCategoryRegion={currentCategoryRegion} setCurrentCategoryRegion={setCurrentCategoryRegion} />;
-    details = currentCategoryRegion && <RegionCategoriesDetails mainCategory={mainCategories[currentCategoryRegion.split('.').pop()]} />;
-  } else if (currentSection === "products") {
+    section = <DomainsList currentDomain={currentDomain} setCurrentDomain={setCurrentDomain} />;
+    details = currentDomain && <DomainCategoriesDetails currentDomain={currentDomain} />;
+  } else if (currentSection === "productScans") {
     section = <ScansList productScanEntries={productScanEntries} currentScanId={currentScanId} setCurrentScanId={setCurrentScanId} />;
     details = currentScanId && <ScanDetails scan={productScanEntries.find(entry => entry.id === currentScanId)} />;
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col min-h-full">
       <div className="flex items-center justify-between p-3 border-b border-white">
         <span className="text-xl font-bold">Rankey</span>
         <button className="button hover:bg-indigo-700" onClick={() => setIsSettingsModalOpen(true)}>
@@ -149,8 +83,8 @@ const Dashboard = ({ setIsLoggedIn }) => {
             Categories
           </button>
           <button
-            onClick={() => setCurrentSection("products")}
-            className={currentSection === "products" ? selectedSectionStyle : sectionStyle}
+            onClick={() => setCurrentSection("productScans")}
+            className={currentSection === "productScans" ? selectedSectionStyle : sectionStyle}
           >
             Product scans
           </button>
@@ -167,7 +101,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
           )}
           {section}
         </div>
-        <div className="w-1/2">{details}</div>
+        <div className="w-1/2 overflow-y-auto">{details}</div>
       </div>
 
       <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />

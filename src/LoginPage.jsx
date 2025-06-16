@@ -1,28 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useRequest from '../hooks/useRequest.hook';
 import config from './config';
 
 function LoginPage({ setIsLoggedIn }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-
-  const { data, error, loading, request } = useRequest();
+  const { error, loading, request, reset } = useRequest();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    try {
-      await request(`${config.apiBaseUrl}/auth`, {
-        method: 'POST',
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include',
-      });
-      console.log();
-      if (data) {
-        setIsLoggedIn(true);
-      }
-    } catch (err) {
-      console.error('Login error:', err);
+    const data = await request(`${config.apiBaseUrl}/auth`, {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+    if (data && data.message == "Authentication successful") {
+      setIsLoggedIn(true);
     }
   };
 
@@ -62,7 +54,7 @@ function LoginPage({ setIsLoggedIn }) {
             </div>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm">{error.message}</p>}
           <button
             type="submit"
             disabled={loading}
