@@ -8,19 +8,19 @@ const DomainsList = ({ currentDomain, setCurrentDomain }) => {
   const startGatheringRequest = useRequest();
   const stopGatheringRequest = useRequest();
 
-  const [domains, setDomains] = useState([]);
+  const [domainsState, setDomainsState] = useState([]);
 
-  const fetchDomains = async () => {
-    const response = await domainsRequest.request(`${config.apiBaseUrl}/amazon/domains`);
-    setDomains(response.domains);
+  const fetchDomainsState = async () => {
+    const response = await domainsRequest.request(`${config.apiBaseUrl}/amazon/domains-state`);
+    setDomainsState(response.domainsState);
   };
 
   useEffect(() => {
-    fetchDomains();
+    fetchDomainsState();
 
     // Further updates from server
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/domain-list/events`, { withCredentials: true });
-    eventSource.onmessage = (event) => setDomains(JSON.parse(event.data));
+    eventSource.onmessage = (event) => setDomainsState(JSON.parse(event.data));
     eventSource.onerror = (err) => eventSource.close();
     return () => eventSource.close();
   }, []);
@@ -33,7 +33,6 @@ const DomainsList = ({ currentDomain, setCurrentDomain }) => {
     }
   };
 
-
   const categoryStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
   const selectedCategoryStyle = "bg-indigo-400 border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
 
@@ -41,8 +40,8 @@ const DomainsList = ({ currentDomain, setCurrentDomain }) => {
     <div>
       <table className="w-full border-collapse">
         <tbody>
-          {Object.keys(domains).length > 0 ? (
-            Object.entries(domains).map(([domain, isActive]) => (
+          {Object.keys(domainsState).length > 0 ? (
+            Object.entries(domainsState).map(([domain, isActive]) => (
               <tr
                 onClick={() => setCurrentDomain(domain)}
                 key={domain}

@@ -9,29 +9,29 @@ const DomainCategoriesDetails = ({ currentDomain }) => {
   const [breadcrumbs, setBreadcrumbs] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
 
-  const fetchCategories = async () => {
-    const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${currentDomain}`);
+  const fetchData = async () => {
+    const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/domain-details?domain=${currentDomain}`);
+    setBreadcrumbs(response.breadcrumbs);
     setMainCategories(response.mainCategories);
   };
 
   useEffect(() => {
-    fetchCategories();
+    fetchData();
 
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/domain-details/events`, { withCredentials: true });
     eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      /*
-      switch (data.type) {
-        "path_update":
-          
-          break;
-        "path_update":
-          
-          break;
+      const { type, patch } = JSON.parse(event.data);
+
+      if (patch.domain == currentDomain) {
+        switch (type) {
+          case "categories_update":
+            setMainCategories(patch.mainCategories);
+            break;
+          case "breadcrumbs_update":
+            setBreadcrumbs(patch.breadcrumbs);
+            break;
+        }
       }
-      */
-      
-      setMainCategories(data.mainCategories);
     };
     eventSource.onerror = (err) => eventSource.close();
     return () => eventSource.close();
