@@ -57,7 +57,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
   }
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col h-screen">
       <div className="flex items-center justify-between p-3 border-b border-white">
         <span className="text-xl font-bold">Rankey</span>
         <button className="button hover:bg-indigo-700" onClick={() => setIsSettingsModalOpen(true)}>
@@ -101,7 +101,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
           )}
           {section}
         </div>
-        <div className="w-1/2 overflow-y-auto">{details}</div>
+        <div className="w-1/2">{details}</div>
       </div>
 
       <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
