@@ -14,6 +14,7 @@ const DomainCategoriesDetails = ({ currentDomain }) => {
   };
 
   useEffect(() => {
+    console.log("Loading initial data...");
     setMainCategoriesState([]);
     setBreadcrumbs([]);
     fetchData();
@@ -51,7 +52,7 @@ const DomainCategoriesDetails = ({ currentDomain }) => {
       );
 
     return (
-      <tr key={mainCategory.nodeId}>
+      <tr key={mainCategory._id}>
         <td className="p-2 border-b border-white">{mainCategory.name}</td>
         <td className="p-2 border-b border-white">{mainCategory.nodeId}</td>
         <td className="p-2 border-b border-white">{mainCategoryStateStatusDisplay}</td>
