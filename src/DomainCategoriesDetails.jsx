@@ -37,7 +37,7 @@ const DomainCategoriesDetails = ({ currentDomain }) => {
   }, [currentDomain]);
 
   if (!mainCategoriesState || mainCategoriesState.length === 0) {
-    return <div className="p-4 text-center text-white h-[calc(100vh-56px)]">No main categories in this domain. Start gathering.</div>;
+    return <div className="p-4 text-center text-white h-full flex items-center justify-center">No main categories in this domain. Start gathering.</div>;
   }
 
   const mainCategoriesDisplay = mainCategoriesState.map((mainCategory) => {
@@ -60,14 +60,14 @@ const DomainCategoriesDetails = ({ currentDomain }) => {
   });
 
   return (
-    <div className="h-[calc(100vh-30px)] p-4 flex flex-col">
+    <div className="h-full flex flex-col p-4">
       {breadcrumbs.length > 0 && (
-        <div className="mb-4 shrink-0 h-[4.5rem]">
+        <div className="h-[4.5rem] mb-4 shrink-0">
           <span className="text-yellow-400">Currently scraping: </span>
           <span>{breadcrumbs.join(' -> ')}</span>
         </div>
       )}
-      <div className="h-[calc(100%-40px)] bg-gray-800 rounded overflow-y-auto">
+      <div className="flex-1 min-h-0 bg-gray-800 rounded overflow-y-auto">
         <table className="w-full border-collapse">
           <thead className="sticky top-0 bg-gray-800">
             <tr>
