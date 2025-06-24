@@ -9,10 +9,7 @@ function LoginPage({ setIsLoggedIn }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const data = await request(`${config.apiBaseUrl}/auth`, {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
+    const data = await request(`${config.apiBaseUrl}/auth`, { method: 'POST' }, { username, password });
     if (data && data.message == "Authentication successful") {
       setIsLoggedIn(true);
     }

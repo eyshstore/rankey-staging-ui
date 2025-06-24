@@ -5,7 +5,7 @@ const useRequest = () => {
   const [loading, setLoading] = useState(false);
   const [controller, setController] = useState(null);
 
-  const request = useCallback(async (url, options = {}) => {
+  const request = useCallback(async (url, options = {}, body = {}) => {
     setLoading(true);
     setError(null);
 
@@ -13,7 +13,7 @@ const useRequest = () => {
     setController(newController);
 
     try {
-      const response = await fetch(url, {
+      const requestConfig = {
         method: "GET",
         ...options,
         signal: newController.signal,
@@ -22,7 +22,13 @@ const useRequest = () => {
           'Content-Type': 'application/json',
           ...options.headers,
         },
-      });
+      };
+
+      if (requestConfig.method == "POST") {
+        requestConfig.body = JSON.stringify(body);
+      }
+
+      const response = await fetch(url, requestConfig);
 
       if (!response.ok) {
         const errorMessage = await response.json();
