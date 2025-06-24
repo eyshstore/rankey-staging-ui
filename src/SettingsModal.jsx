@@ -22,6 +22,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
         });
         const data = await response.json();
         setProviders(data.providers);
+        setCurrentScrapingProvider(data.selectedProviderIndex || -1);
         setApiKeyInputs(data.providers.reduce((acc, provider) => ({
           ...acc,
           [provider.name]: provider.hasApiKey ? provider.apiKey : ''
@@ -65,6 +66,37 @@ const SettingsModal = ({ isOpen, onClose }) => {
     };
   }, [isOpen]);
 
+  // Handle selecting a provider
+  const handleSelectProvider = async (providerName, index) => {
+    try {
+      setError(null);
+      setSuccessMessage(null);
+      const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scrapingProvider: providerName })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setCurrentScrapingProvider(index);
+        setSuccessMessage(`Selected provider: ${providerName}`);
+        // Refresh provider status
+        const statusResponse = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+        const statusData = await statusResponse.json();
+        setProviders(statusData.providers);
+      } else {
+        setError(data.error || 'Failed to select provider');
+      }
+    } catch (err) {
+      setError('Failed to select provider');
+      console.error('Select provider error:', err);
+    }
+  };
+
   // Handle API key update
   const handleApiKeyUpdate = async (providerName) => {
     const apiKey = apiKeyInputs[providerName];
@@ -76,7 +108,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     try {
       setError(null);
       setSuccessMessage(null);
-      const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider`, {
+      const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider-key`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -156,7 +188,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     <tr
                       key={provider.name}
                       className={index === currentScrapingProvider ? "bg-indigo-500" : "hover:bg-indigo-800 hover:cursor-pointer"}
-                      onClick={() => setCurrentScrapingProvider(index)}
+                      onClick={() => handleSelectProvider(provider.name, index)}
                     >
                       <td className="border-b border-gray-200 p-4 text-white">{provider.name}</td>
                       <td className="border-b border-gray-200 p-4">
@@ -181,7 +213,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       <td className="border-b border-gray-200 p-4">
                         <button
                           className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded-md disabled:bg-gray-500"
-                          onClick={() => handleApiKeyUpdate(provider.name)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent row click
+                            handleApiKeyUpdate(provider.name);
+                          }}
                           disabled={apiKeyInputs[provider.name] === provider.apiKey || !apiKeyInputs[provider.name]}
                         >
                           Update
