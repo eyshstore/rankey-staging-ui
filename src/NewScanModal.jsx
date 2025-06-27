@@ -1,66 +1,55 @@
 import React, { useState, useEffect } from 'react';
-
 import config from './config';
-
 import useRequest from "../hooks/useRequest.hook";
 
 const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
   const mainCategoriesRequest = useRequest();
-  const [scanType, setScanType] = useState('Category');
+  const [scanType, setScanType] = useState('ASINs');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
+    domain: 'com',
+    asins: [''],
+    productsConcurrentRequests: 8,
     category: '',
-    region: 'USA',
-    categoryConcurrentRequests: 5, // Align with backend MAX_REQUESTS
+    categoryConcurrentRequests: 5,
     categoryMaxRequests: 100,
     strategy: 'breadth-first-left',
     pagesSkip: 5,
     scrapeAllSections: false,
-    productsMaxRequests: 8, // Align with backend MAX_REQUESTS
-    productsConcurrentRequests: 8,
+    productsMaxRequests: 8,
     minRank: 1,
     maxRank: 10000,
-    asins: [''],
-    scrapingProvider: 'MockAmazon', // Default for testing
+    scrapingProvider: 'MockAmazon',
   });
 
   const [categories, setCategories] = useState({
-    USA: [],
-    Germany: [],
+    com: [],
+    de: [],
   });
 
-  // Fetch categories on mount
-  useEffect(() => {
-    /*
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch(`${config.apiBaseUrl}/amazon/categories?domain=com`, { credentials: 'include' });
-        const usaCategories = await response.json();
-        const responseDe = await fetch(`${config.apiBaseUrl}/amazon/categories?domain=de`, { credentials: 'include' });
-        const germanyCategories = await responseDe.json();
-        setCategories({
-          USA: usaCategories.map(cat => ({ id: cat._id, name: cat.name })),
-          Germany: germanyCategories.map(cat => ({ id: cat._id, name: cat.name })),
-        });
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
-      }
-    };
-    fetchCategories();
-    */
-  }, []);
-
-  const regions = [
-    { value: 'USA', label: 'USA (https://www.amazon.com)', domain: 'com' },
-    { value: 'Germany', label: 'Germany (https://www.amazon.de)', domain: 'de' },
+  const domains = [
+    { value: 'com', label: 'USA (https://www.amazon.com)' },
+    { value: 'de', label: 'Germany (https://www.amazon.de)' },
   ];
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
+      setCategories(prev => ({ ...prev, [formData.domain]: response.mainCategories || [] }));
+    };
+    if (scanType === 'Category') fetchCategories();
+  }, [formData.domain, scanType]);
+
+  useEffect(() => {
+    const totalPages = Math.ceil(formData.asins.length / itemsPerPage);
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages || 1);
+    }
+  }, [formData.asins, currentPage, itemsPerPage]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    if (name == "regions") {
-      mainCategoriesRequest.request(`${apiBaseUrl}/amazon/main-categories`);
-    }
-
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -84,41 +73,35 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const selectedRegion = regions.find(r => r.value === formData.region);
-    const domain = selectedRegion.domain;
-    const selectedCategory = categories[formData.region].find(cat => cat.name === formData.category);
-
     const scanData = {
-      id: `a${Math.random().toString(36).substr(2, 4)}`,
       type: scanType,
-      domain,
-      category: formData.category,
-      categoryId: selectedCategory?.id,
-      minRank: parseInt(formData.minRank),
-      maxRank: parseInt(formData.maxRank),
+      domain: formData.domain,
       state: 'enqueued',
       scrapingProvider: formData.scrapingProvider,
-      ...(scanType === 'Category' && {
-        categoryConcurrentRequests: parseInt(formData.categoryConcurrentRequests),
-        categoryMaxRequests: parseInt(formData.categoryMaxRequests),
-        strategy: formData.strategy,
-        pagesSkip: parseInt(formData.pagesSkip),
-        categoriesThrottlingOptimization: !formData.scrapeAllSections,
-        productsToGather: parseInt(formData.maxRank) - parseInt(formData.minRank) + 1,
-        productExpiration: 24 * 60 * 60 * 1000, // 1 day default
-      }),
-      ...(scanType === 'Deals' && {
-        dealsCategory: formData.category,
-        productsMaxRequests: parseInt(formData.productsMaxRequests),
-        productsConcurrentRequests: parseInt(formData.productsConcurrentRequests),
-        productExpiration: 24 * 60 * 60 * 1000,
-      }),
-      ...(scanType === 'ASINs' && {
-        asins: formData.asins.filter(asin => /^[A-Z0-9]{10}$/.test(asin.trim())),
-        productsConcurrentRequests: parseInt(formData.productsConcurrentRequests),
-        productExpiration: 24 * 60 * 60 * 1000,
-      }),
     };
+
+    if (scanType === 'ASINs') {
+      scanData.asins = formData.asins.filter(asin => /^[A-Z0-9]{10}$/.test(asin.trim()));
+      scanData.productsConcurrentRequests = parseInt(formData.productsConcurrentRequests);
+    } else if (scanType === 'Category') {
+      const selectedCategory = categories[formData.domain].find(cat => cat.name === formData.category);
+      scanData.category = formData.category;
+      scanData.categoryId = selectedCategory?.id;
+      scanData.categoryConcurrentRequests = parseInt(formData.categoryConcurrentRequests);
+      scanData.categoryMaxRequests = parseInt(formData.categoryMaxRequests);
+      scanData.strategy = formData.strategy;
+      scanData.pagesSkip = parseInt(formData.pagesSkip);
+      scanData.scrapeAllSections = formData.scrapeAllSections;
+      scanData.minRank = parseInt(formData.minRank);
+      scanData.maxRank = parseInt(formData.maxRank);
+      scanData.productsToGather = parseInt(formData.maxRank) - parseInt(formData.minRank) + 1;
+      scanData.productExpiration = 24 * 60 * 60 * 1000;
+    } else if (scanType === 'Deals') {
+      scanData.category = formData.category;
+      scanData.productsMaxRequests = parseInt(formData.productsMaxRequests);
+      scanData.productsConcurrentRequests = parseInt(formData.productsConcurrentRequests);
+      scanData.productExpiration = 24 * 60 * 60 * 1000;
+    }
 
     try {
       const response = await fetch(`${config.apiBaseUrl}/amazon/start-scan`, {
@@ -141,9 +124,14 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
 
   if (!isOpen) return null;
 
+  const totalPages = Math.ceil(formData.asins.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentAsins = formData.asins.slice(startIndex, endIndex);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-lg w-1/3 max-h-[80vh] flex flex-col">
+      <div className="bg-gray-800 p-6 rounded-lg w-1/2 max-h-[80vh] flex flex-col">
         <div className="flex justify-between items-center mb-4 sticky top-0 bg-gray-800 z-10">
           <h2 className="text-xl font-bold text-white">New Scan</h2>
           <button
@@ -155,251 +143,326 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
             </svg>
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2">
-          <div className="mb-4">
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
             <label className="block text-sm font-medium text-gray-200">Type</label>
             <select
               value={scanType}
               onChange={(e) => setScanType(e.target.value)}
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
             >
+              <option value="ASINs">ASINs</option>
               <option value="Category">Category</option>
               <option value="Deals">Deals</option>
-              <option value="ASINs">ASINs</option>
             </select>
           </div>
-
-          {scanType === 'Category' && (
-            <div>
-              <h3 className="text-lg font-semibold mb-2 text-white">Category Settings</h3>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Region</label>
-                <select
-                  name="region"
-                  value={formData.region}
-                  onChange={handleInputChange}
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                >
-                  {regions.map(region => (
-                    <option key={region.value} value={region.value}>{region.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Category</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                >
-                  <option value="">Select a category</option>
-                  {categories[formData.region].map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Categories Concurrent Requests</label>
-                <input
-                  type="number"
-                  name="categoryConcurrentRequests"
-                  value={formData.categoryConcurrentRequests}
-                  onChange={handleInputChange}
-                  min="1"
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Categories Max Requests</label>
-                <input
-                  type="number"
-                  name="categoryMaxRequests"
-                  value={formData.categoryMaxRequests}
-                  onChange={handleInputChange}
-                  min="1"
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Strategy</label>
-                <select
-                  name="strategy"
-                  value={formData.strategy}
-                  onChange={handleInputChange}
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                >
-                  <option value="breadth-first-left">Breadth-first left</option>
-                </select>
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Pages Skip</label>
-                <input
-                  type="number"
-                  name="pagesSkip"
-                  value={formData.pagesSkip}
-                  onChange={handleInputChange}
-                  min="0"
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-              </div>
-              <div className="mb-2 flex items-center">
-                <input
-                  type="checkbox"
-                  name="scrapeAllSections"
-                  checked={formData.scrapeAllSections}
-                  onChange={handleInputChange}
-                  className="mr-2"
-                />
-                <label className="text-sm text-gray-200">Scrape all sections</label>
-              </div>
-            </div>
-          )}
-
-          {scanType === 'Deals' && (
-            <div>
-              <h3 className="text-lg font-semibold mb-2 text-white">Deals Settings</h3>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Region</label>
-                <select
-                  name="region"
-                  value={formData.region}
-                  onChange={handleInputChange}
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                >
-                  {regions.map(region => (
-                    <option key={region.value} value={region.value}>{region.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Category</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                >
-                  <option value="">Select a category</option>
-                  {categories[formData.region].map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Products Max Requests</label>
-                <input
-                  type="number"
-                  name="productsMaxRequests"
-                  value={formData.productsMaxRequests}
-                  onChange={handleInputChange}
-                  min="1"
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Products Concurrent Requests</label>
-                <input
-                  type="number"
-                  name="productsConcurrentRequests"
-                  value={formData.productsConcurrentRequests}
-                  onChange={handleInputChange}
-                  min="1"
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          {scanType === 'ASINs' && (
-            <div>
-              <h3 className="text-lg font-semibold mb-2 text-white">ASINs Settings</h3>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">ASINs</label>
-                <button
-                  type="button"
-                  onClick={addAsinField}
-                  className="bg-blue-600 hover:bg-blue-800 text-white p-2 rounded mb-2"
-                >
-                  Add ASIN
-                </button>
-                {formData.asins.map((asin, index) => (
-                  <div key={index} className="flex items-center mb-2">
-                    <input
-                      type="text"
-                      value={asin}
-                      onChange={(e) => handleAsinChange(index, e.target.value)}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                      placeholder={`ASIN ${index + 1}`}
-                    />
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => removeAsinField(index)}
-                        className="ml-2 bg-red-600 hover:bg-red-800 text-white p-2 rounded"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-200">Products Concurrent Requests</label>
-                <input
-                  type="number"
-                  name="productsConcurrentRequests"
-                  value={formData.productsConcurrentRequests}
-                  onChange={handleInputChange}
-                  min="1"
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-200">Min & Max Rank</label>
-            <div className="flex space-x-2">
-              <input
-                type="number"
-                name="minRank"
-                value={formData.minRank}
-                onChange={handleInputChange}
-                min="1"
-                className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
-              />
-              <input
-                type="number"
-                name="maxRank"
-                value={formData.maxRank}
-                onChange={handleInputChange}
-                min="1"
-                className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
-              />
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-200">Scraping Provider</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-200">Domain</label>
             <select
-              name="scrapingProvider"
-              value={formData.scrapingProvider}
+              name="domain"
+              value={formData.domain}
               onChange={handleInputChange}
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
             >
-              <option value="MockAmazon">MockAmazon (Testing)</option>
-              {/* Add other providers as needed */}
+              {domains.map(domain => (
+                <option key={domain.value} value={domain.value}>{domain.label}</option>
+              ))}
             </select>
           </div>
+        </div>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2">
+          {scanType === 'ASINs' && (
+            <div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-200">ASINs</label>
+                <div className="mb-2">
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
 
+                      const handleCsvUpload = (file) => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const text = event.target.result;
+                          const rows = text.split('\n').map((row) => row.split(','));
+                          processRows(rows);
+                        };
+                        reader.readAsText(file);
+                      };
+                    
+                      // Process XLSX file
+                      const handleXlsxUpload = (file) => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const data = event.target.result;
+                          const workbook = XLSX.read(data, { type: 'binary' });
+                          const sheetName = workbook.SheetNames[0]; // Use first sheet
+                          const sheet = workbook.Sheets[sheetName];
+                          // Convert sheet to array of rows
+                          const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                          processRows(rows);
+                        };
+                        reader.readAsBinaryString(file);
+                      };
+                    
+                      // Extract ASINs from rows
+                      const processRows = (rows) => {
+                        if (rows.length === 0) {
+                          alert('The uploaded file is empty.');
+                          return;
+                        }
+                    
+                        // Get header row and convert to lowercase for case-insensitive search
+                        const header = rows[0].map((cell) => String(cell).toLowerCase());
+                        const asinIndex = header.findIndex((cell) => cell.includes('asin'));
+                    
+                        if (asinIndex === -1) {
+                          alert('No column with "ASIN" found in the file.');
+                          return;
+                        }
+                    
+                        // Extract ASINs from the identified column, skipping the header row
+                        const extractedAsins = rows.slice(1)
+                          .map((row) => row[asinIndex])
+                          .filter((asin) => /^[A-Z0-9]{10}$/.test(asin)); // Validate ASIN format
+                    
+                        setFormData(prev => ({ ...prev, asins: extractedAsins }));
+                      };
+
+                      const fileExtension = file.name.split('.').pop().toLowerCase();
+
+                      if (fileExtension === 'csv') {
+                        handleCsvUpload(file);
+                      } else if (fileExtension === 'xlsx') {
+                        handleXlsxUpload(file);
+                      } else {
+                        alert('Unsupported file format. Please upload a CSV or XLSX file.');
+                      }
+                    }}
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  />
+                </div>
+                <table className="w-full text-white">
+                  <thead>
+                    <tr>
+                      <th className="p-2 border-b">ASIN</th>
+                      <th className="p-2 border-b">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentAsins.map((asin, index) => (
+                      <tr key={startIndex + index}>
+                        <td className="p-2 border-b">
+                          <input
+                            type="text"
+                            value={asin}
+                            onChange={(e) => handleAsinChange(startIndex + index, e.target.value)}
+                            className="w-full bg-gray-700 p-1 rounded"
+                            placeholder={`ASIN ${startIndex + index + 1}`}
+                          />
+                        </td>
+                        <td className="p-2 border-b">
+                          <button
+                            type="button"
+                            onClick={() => removeAsinField(startIndex + index)}
+                            className="bg-red-600 hover:bg-red-800 text-white p-1 rounded"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button
+                  type="button"
+                  onClick={addAsinField}
+                  className="bg-blue-600 hover:bg-blue-800 text-white p-2 rounded mt-2"
+                >
+                  Add ASIN
+                </button>
+                <div className="flex justify-between mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-white">Page {currentPage} of {totalPages}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-200">Products Concurrent Requests</label>
+                <input
+                  type="number"
+                  name="productsConcurrentRequests"
+                  value={formData.productsConcurrentRequests}
+                  onChange={handleInputChange}
+                  min="1"
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                />
+              </div>
+            </div>
+          )}
+          {scanType === 'Category' && (
+            <div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">Category</label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  >
+                    <option value="">Select a category</option>
+                    {categories[formData.domain].map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">Categories Concurrent Requests</label>
+                  <input
+                    type="number"
+                    name="categoryConcurrentRequests"
+                    value={formData.categoryConcurrentRequests}
+                    onChange={handleInputChange}
+                    min="1"
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">Categories Max Requests</label>
+                  <input
+                    type="number"
+                    name="categoryMaxRequests"
+                    value={formData.categoryMaxRequests}
+                    onChange={handleInputChange}
+                    min="1"
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">Strategy</label>
+                  <select
+                    name="strategy"
+                    value={formData.strategy}
+                    onChange={handleInputChange}
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  >
+                    <option value="breadth-first-left">Breadth-first left</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">Pages Skip</label>
+                  <input
+                    type="number"
+                    name="pagesSkip"
+                    value={formData.pagesSkip}
+                    onChange={handleInputChange}
+                    min="0"
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-200">Min & Max Rank</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="number"
+                      name="minRank"
+                      value={formData.minRank}
+                      onChange={handleInputChange}
+                      min="1"
+                      className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                    />
+                    <input
+                      type="number"
+                      name="maxRank"
+                      value={formData.maxRank}
+                      onChange={handleInputChange}
+                      min="1"
+                      className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                    />
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="scrapeAllSections"
+                      checked={formData.scrapeAllSections}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    <label className="text-sm text-gray-200">Scrape all sections</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {scanType === 'Deals' && (
+            <div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">Category</label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  >
+                    <option value="">Select a category</option>
+                    {categories[formData.domain].map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">Products Max Requests</label>
+                  <input
+                    type="number"
+                    name="productsMaxRequests"
+                    value={formData.productsMaxRequests}
+                    onChange={handleInputChange}
+                    min="1"
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-200">Products Concurrent Requests</label>
+                  <input
+                    type="number"
+                    name="productsConcurrentRequests"
+                    value={formData.productsConcurrentRequests}
+                    onChange={handleInputChange}
+                    min="1"
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           <button
             type="submit"
-            className="bg-purple-600 hover:bg-purple-800 text-white p-2 rounded w-full"
+            className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
           >
-            Create Scan
+            Start Scan
           </button>
         </form>
       </div>

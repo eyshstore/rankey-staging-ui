@@ -10,13 +10,11 @@ import config from './config';
 const Dashboard = ({ setIsLoggedIn }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [currentSection, setCurrentSection] = useState('');
+  
   const [currentDomain, setCurrentDomain] = useState('');
-  const [productScanEntries, setProductScanEntries] = useState([
-    { id: "a5c1", type: "Category", domain: "de", category: "Bekleidung", minRank: 1, maxRank: 10000, state: "enqueued" },
-    { id: "a5c2", type: "ASINs", domain: "com", category: "Arts & Crafts", minRank: 1, maxRank: 10000, state: "enqueued" },
-    { id: "a5c3", type: "Deals", domain: "com", category: "Appliances", minRank: 1, maxRank: 10000, state: "active" }
-  ]);
+  
   const [currentScanId, setCurrentScanId] = useState('');
+
   const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -44,7 +42,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
     section = <DomainsList currentDomain={currentDomain} setCurrentDomain={setCurrentDomain} />;
     details = currentDomain && <DomainCategoriesDetails currentDomain={currentDomain} />;
   } else if (currentSection === "productScans") {
-    section = <ScansList productScanEntries={productScanEntries} currentScanId={currentScanId} setCurrentScanId={setCurrentScanId} />;
+    section = <ScansList currentScanId={currentScanId} setCurrentScanId={setCurrentScanId} />;
     details = currentScanId && <ScanDetails scan={productScanEntries.find(entry => entry.id === currentScanId)} />;
   }
 
