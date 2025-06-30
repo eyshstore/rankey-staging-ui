@@ -14,7 +14,6 @@ const DomainCategoriesDetails = ({ currentDomain }) => {
   };
 
   useEffect(() => {
-    console.log("Loading initial data...");
     setMainCategoriesState([]);
     setBreadcrumbs([]);
     fetchData();

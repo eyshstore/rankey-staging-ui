@@ -12,7 +12,6 @@ const ScansList = ({ currentScanId, setCurrentScanId, onCreateScan }) => {
   useEffect(() => {
     const fetchScans = async () => {
       const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans`);
-      console.log(response);
       setScans(response.scans);
     };
 
