@@ -1,29 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import config from './config';
 import useRequest from "../hooks/useRequest.hook";
+import * as XLSX from "xlsx";
 
 const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
   const mainCategoriesRequest = useRequest();
   const scrapingProviderRequest = useRequest();
 
   const [scanType, setScanType] = useState('ASINs');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     domain: 'com',
     asins: [''],
-    productsConcurrentRequests: 8,
+    productsConcurrentRequests: 1,
+    productsToGather: 10000,
     category: '',
-    categoryConcurrentRequests: 5,
-    categoryMaxRequests: 100,
+    categoryConcurrentRequests: 1,
     strategy: 'breadth-first-left',
     pagesSkip: 5,
     scrapeAllSections: false,
-    productsMaxRequests: 8,
     minRank: 1,
     maxRank: 10000,
     scrapingProvider: 'MockAmazon',
+    productExpiration: getFormattedDateTime(new Date()),
   });
+  const [newAsin, setNewAsin] = useState('');
 
   const [categories, setCategories] = useState({
     com: [],
@@ -35,17 +37,17 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
     { value: 'de', label: 'Germany (https://www.amazon.de)' },
   ];
 
-  useEffect(() => {
-    const fetchScrapingProviderStatus = async () => {
-      const scrapingProviderStatus = await scrapingProviderRequest.request(`${config.apiBaseUrl}/amazon/scraping-provider-status`);
-      console.log(scrapingProviderStatus);
-      if (scrapingProviderStatus) {
-        setFormData(prev => ({ ...prev, productsConcurrentRequests: scrapingProviderStatus.maxConcurrency }))
-      }
-    };
+  function getFormattedDateTime(date) {
+    const pad = (num) => String(num).padStart(2, '0');
 
-    fetchScrapingProviderStatus();
-  }, []);
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -77,7 +79,13 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
   };
 
   const addAsinField = () => {
-    setFormData(prev => ({ ...prev, asins: [...prev.asins, ''] }));
+    if (newAsin.trim() && /^[A-Z0-9]{10}$/.test(newAsin)) {
+      console.log(newAsin);
+      setFormData({ ...formData, asins: [...formData.asins, newAsin] });
+      setNewAsin('');
+    } else {
+      alert('Please enter a valid ASIN (10 characters, alphanumeric)');
+    }
   };
 
   const removeAsinField = (index) => {
@@ -90,29 +98,28 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
     const scanData = {
       type: scanType,
       domain: formData.domain,
-      state: 'enqueued',
       scrapingProvider: formData.scrapingProvider,
     };
 
     if (scanType === 'ASINs') {
-      scanData.asins = formData.asins.filter(asin => /^[A-Z0-9]{10}$/.test(asin.trim()));
-      scanData.productsConcurrentRequests = parseInt(formData.productsConcurrentRequests);
+      if (!formData.asins.length) {
+        // display error that at least 1 asin has to be selected in order to send data
+      }
     } else if (scanType === 'Category') {
-      const selectedCategory = categories[formData.domain].find(cat => cat.name === formData.category);
-      scanData.category = formData.category;
       scanData.categoryId = selectedCategory?.id;
       scanData.categoryConcurrentRequests = parseInt(formData.categoryConcurrentRequests);
-      scanData.categoryMaxRequests = parseInt(formData.categoryMaxRequests);
       scanData.strategy = formData.strategy;
       scanData.pagesSkip = parseInt(formData.pagesSkip);
       scanData.minRank = parseInt(formData.minRank);
       scanData.maxRank = parseInt(formData.maxRank);
-      scanData.productsToGather = parseInt(formData.maxRank) - parseInt(formData.minRank) + 1;
+      scanData.productsToGather = parseInt(formData.productsToGather);
     } else if (scanType === 'Deals') {
       scanData.category = formData.category;
-      scanData.productsMaxRequests = parseInt(formData.productsMaxRequests);
-      scanData.productsConcurrentRequests = parseInt(formData.productsConcurrentRequests);
+      scanData.productsToGather = parseInt(formData.productsToGather);
+      scanData.productsToGather = parseInt(formData.maxRank) - parseInt(formData.minRank) + 1;
     }
+
+    scanData.productsConcurrentRequests = parseInt(formData.productsConcurrentRequests);
 
     try {
       const response = await fetch(`${config.apiBaseUrl}/amazon/start-scan`, {
@@ -135,9 +142,10 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
 
   if (!isOpen) return null;
 
-  const totalPages = Math.ceil(formData.asins.length / itemsPerPage);
+  const totalPages = formData.asins.length ? Math.ceil(formData.asins.length / itemsPerPage) : 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
+
   const currentAsins = formData.asins.slice(startIndex, endIndex);
 
   let payloadForm;
@@ -145,76 +153,69 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
     payloadForm = (
       <div>
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-200">ASINs</label>
           <div className="mb-2">
-            <input
-              type="file"
-              accept=".csv,.xlsx"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+            <input id="fileUpload" accept=".csv,.xlsx" type="file" className="hidden" onChange={(e) => {
+              const file = e.target.files[0];
+              if (!file) return;
 
-                const handleCsvUpload = (file) => {
-                  const reader = new FileReader();
-                  reader.onload = (event) => {
-                    const text = event.target.result;
-                    const rows = text.split('\n').map((row) => row.split(','));
-                    processRows(rows);
-                  };
-                  reader.readAsText(file);
+              const handleCsvUpload = (file) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const text = event.target.result;
+                  const rows = text.split('\n').map((row) => row.split(','));
+                  processRows(rows);
                 };
+                reader.readAsText(file);
+              };
 
-                // Process XLSX file
-                const handleXlsxUpload = (file) => {
-                  const reader = new FileReader();
-                  reader.onload = (event) => {
-                    const data = event.target.result;
-                    const workbook = XLSX.read(data, { type: 'binary' });
-                    const sheetName = workbook.SheetNames[0]; // Use first sheet
-                    const sheet = workbook.Sheets[sheetName];
-                    // Convert sheet to array of rows
-                    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    processRows(rows);
-                  };
-                  reader.readAsBinaryString(file);
+              const handleXlsxUpload = (file) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const data = event.target.result;
+                  const workbook = XLSX.read(data, { type: 'binary' });
+                  const sheetName = workbook.SheetNames[0];
+                  const sheet = workbook.Sheets[sheetName];
+                  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                  processRows(rows);
                 };
+                reader.readAsBinaryString(file);
+              };
 
-                // Extract ASINs from rows
-                const processRows = (rows) => {
-                  if (rows.length === 0) {
-                    alert('The uploaded file is empty.');
-                    return;
-                  }
-
-                  // Get header row and convert to lowercase for case-insensitive search
-                  const header = rows[0].map((cell) => String(cell).toLowerCase());
-                  const asinIndex = header.findIndex((cell) => cell.includes('asin'));
-
-                  if (asinIndex === -1) {
-                    alert('No column with "ASIN" found in the file.');
-                    return;
-                  }
-
-                  // Extract ASINs from the identified column, skipping the header row
-                  const extractedAsins = rows.slice(1)
-                    .map((row) => row[asinIndex])
-                    .filter((asin) => /^[A-Z0-9]{10}$/.test(asin)); // Validate ASIN format
-
-                  setFormData(prev => ({ ...prev, asins: extractedAsins }));
-                };
-
-                const fileExtension = file.name.split('.').pop().toLowerCase();
-
-                if (fileExtension === 'csv') {
-                  handleCsvUpload(file);
-                } else if (fileExtension === 'xlsx') {
-                  handleXlsxUpload(file);
-                } else {
-                  alert('Unsupported file format. Please upload a CSV or XLSX file.');
+              const processRows = (rows) => {
+                if (rows.length === 0) {
+                  alert('The uploaded file is empty.');
+                  return;
                 }
-              }}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-            />
+
+                const header = rows[0].map((cell) => String(cell).toLowerCase());
+                const asinIndex = header.findIndex((cell) => cell.includes('asin'));
+
+                if (asinIndex === -1) {
+                  alert('No column with "ASIN" found in the file.');
+                  return;
+                }
+
+                const extractedAsins = rows.slice(1)
+                  .map((row) => row[asinIndex])
+                  .filter((asin) => /^[A-Z0-9]{10}$/.test(asin));
+
+                setFormData(prev => ({ ...prev, asins: extractedAsins }));
+                setCurrentPage(1);
+              };
+
+              const fileExtension = file.name.split('.').pop().toLowerCase();
+
+              if (fileExtension === 'csv') {
+                handleCsvUpload(file);
+              } else if (fileExtension === 'xlsx') {
+                handleXlsxUpload(file);
+              } else {
+                alert('Unsupported file format. Please upload a CSV or XLSX file.');
+              }
+
+              e.target.value = null;
+            }} />
+            <label htmlFor="fileUpload" className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Upload file with ASINs</label>
           </div>
           <table className="w-full text-white">
             <thead>
@@ -250,13 +251,23 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
               ))}
             </tbody>
           </table>
-          <button
-            type="button"
-            onClick={addAsinField}
-            className="bg-blue-600 hover:bg-blue-800 text-white p-2 rounded mt-2"
-          >
-            Add ASIN
-          </button>
+          <div className="flex items-center space-x-2 mt-2">
+            <button
+              type="button"
+              onClick={addAsinField}
+              className="bg-blue-600 hover:bg-blue-800 text-white p-2 rounded"
+            >
+              Add ASIN
+            </button>
+            <input
+              type="text"
+              value={newAsin}
+              onChange={(e) => setNewAsin(e.target.value)}
+              className="flex-1 bg-gray-700 p-1 rounded"
+              placeholder="Enter new ASIN"
+              maxLength={10}
+            />
+          </div>
           <div className="flex justify-between mt-4">
             <button
               type="button"
@@ -278,11 +289,11 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
           </div>
         </div>
         <button
-            type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
-          >
-            Start Scan
-          </button>
+          type="submit"
+          className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
+        >
+          Start Scan
+        </button>
       </div>
     );
   } else if (scanType == "Category") {
@@ -310,17 +321,6 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
                 type="number"
                 name="categoryConcurrentRequests"
                 value={formData.categoryConcurrentRequests}
-                onChange={handleInputChange}
-                min="1"
-                className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-200">Categories Max Requests</label>
-              <input
-                type="number"
-                name="categoryMaxRequests"
-                value={formData.categoryMaxRequests}
                 onChange={handleInputChange}
                 min="1"
                 className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
@@ -371,14 +371,25 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
                   className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200">Products to gather</label>
+                <input
+                  type="number"
+                  name="productsToGather"
+                  value={formData.productsToGather}
+                  onChange={handleInputChange}
+                  min="24"
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                />
+              </div>
             </div>
+            <button
+              type="submit"
+              className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
+            >
+              Start Scan
+            </button>
           </div>
-          <button
-            type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
-          >
-            Start Scan
-          </button>
         </div>
       );
     } else {
@@ -415,10 +426,10 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
           </div>
         </div>
         <button
-            type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
-          >
-            Start Scan
+          type="submit"
+          className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
+        >
+          Start Scan
         </button>
       </div>
     );
@@ -426,7 +437,7 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-lg w-1/2 max-h-[80vh] flex flex-col">
+      <div className="bg-gray-800 p-6 rounded-lg w-1/2 max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-4 sticky top-0 bg-gray-800 z-10">
           <h2 className="text-xl font-bold text-white">New Scan</h2>
           <button

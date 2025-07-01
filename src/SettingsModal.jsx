@@ -22,7 +22,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
         });
         const data = await response.json();
         setProviders(data.providers);
-        setCurrentScrapingProvider(data.selectedProviderIndex || -1);
+        setCurrentScrapingProvider(data.selectedProviderIndex);
         setApiKeyInputs(data.providers.reduce((acc, provider) => ({
           ...acc,
           [provider.name]: provider.hasApiKey ? provider.apiKey : ''
@@ -97,6 +97,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleApiKeyChange = (providerName, value) => {
+    setApiKeyInputs(prev => ({ ...prev, [providerName]: value }));
+  };
+
   // Handle API key update
   const handleApiKeyUpdate = async (providerName) => {
     const apiKey = apiKeyInputs[providerName];
@@ -127,11 +131,6 @@ const SettingsModal = ({ isOpen, onClose }) => {
       setError('Failed to update API key');
       console.error('Update API key error:', err);
     }
-  };
-
-  // Handle API key input change
-  const handleApiKeyChange = (providerName, value) => {
-    setApiKeyInputs(prev => ({ ...prev, [providerName]: value }));
   };
 
   // Clear messages after 5 seconds
@@ -192,13 +191,16 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     >
                       <td className="border-b border-gray-200 p-4 text-white">{provider.name}</td>
                       <td className="border-b border-gray-200 p-4">
-                        <input
-                          className="border border-white p-2 rounded-sm bg-gray-700 text-white w-full"
-                          type="text"
-                          placeholder="Enter API Key"
-                          value={apiKeyInputs[provider.name] || ''}
-                          onChange={(e) => handleApiKeyChange(provider.name, e.target.value)}
-                        />
+                        { provider.name != "MockAmazon" && (
+                          <input
+                            className="border border-white p-2 rounded-sm bg-gray-700 text-white w-full"
+                            type="text"
+                            placeholder="Enter API Key"
+                            value={apiKeyInputs[provider.name] || ''}
+                            onChange={(e) => handleApiKeyChange(provider.name, e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          />)
+                        }
                       </td>
                       <td className="border-b border-gray-200 p-4 text-white">
                         {provider.status && !provider.status.error
