@@ -30,7 +30,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
   };
 
   const handleCreateScan = (newScan) => {
-    setProductScanEntries(prev => [...prev, newScan]);
+    // 
   };
 
   const sectionStyle = "w-full text-left p-2 border-b border-white hover:bg-indigo-500 hover:cursor-pointer";

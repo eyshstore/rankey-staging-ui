@@ -5,24 +5,22 @@ import * as XLSX from "xlsx";
 
 const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
   const mainCategoriesRequest = useRequest();
-  const scrapingProviderRequest = useRequest();
+  const submitRequest = useRequest();
 
   const [scanType, setScanType] = useState('ASINs');
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     domain: 'com',
-    asins: [''],
+    asins: [],
     productsConcurrentRequests: 1,
-    productsToGather: 10000,
-    category: '',
+    numberOfProductsToGather: 10000,
     categoryConcurrentRequests: 1,
     strategy: 'breadth-first-left',
     pagesSkip: 5,
     scrapeAllSections: false,
     minRank: 1,
     maxRank: 10000,
-    scrapingProvider: 'MockAmazon',
     productExpiration: getFormattedDateTime(new Date()),
   });
   const [newAsin, setNewAsin] = useState('');
@@ -51,11 +49,13 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
-      setCategories(prev => ({ ...prev, [formData.domain]: response.mainCategories || [] }));
+      if (!categories[formData.domain]?.length) {
+        const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
+        setCategories(prev => ({ ...prev, [formData.domain]: response.mainCategories || [] }));
+      }
     };
-    if (scanType === 'Category') fetchCategories();
-  }, [formData.domain, scanType]);
+    fetchCategories();
+  }, [formData.domain]);
 
   useEffect(() => {
     const totalPages = Math.ceil(formData.asins.length / itemsPerPage);
@@ -66,26 +66,40 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
 
-  const handleAsinChange = (index, value) => {
-    const newAsins = [...formData.asins];
-    newAsins[index] = value;
-    setFormData(prev => ({ ...prev, asins: newAsins }));
+    if (name == "maxRank" && value < formData.minRank) {
+      e.target.value = value + 1;
+      return;
+    }
+
+    if (name == "minRank" && value > formData.maxRank) {
+      e.target.value = value - 1;
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value, }));
   };
 
   const addAsinField = () => {
-    if (newAsin.trim() && /^[A-Z0-9]{10}$/.test(newAsin)) {
-      console.log(newAsin);
-      setFormData({ ...formData, asins: [...formData.asins, newAsin] });
-      setNewAsin('');
-    } else {
+    const asin = newAsin.trim().toUpperCase();
+
+    if (!/^[A-Z0-9]{10}$/.test(asin)) {
       alert('Please enter a valid ASIN (10 characters, alphanumeric)');
+      return;
     }
+
+    if (formData.asins.includes(asin)) {
+      alert('This ASIN is already in the list.');
+      return;
+    }
+
+    setFormData(prev => {
+      const updatedAsins = [...prev.asins, asin];
+      setCurrentPage(Math.ceil(updatedAsins.length / itemsPerPage));
+      return { ...prev, asins: updatedAsins };
+    });
+
+    setNewAsin('');
   };
 
   const removeAsinField = (index) => {
@@ -98,44 +112,46 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
     const scanData = {
       type: scanType,
       domain: formData.domain,
-      scrapingProvider: formData.scrapingProvider,
+      productExpiration: formData.productExpiration,
+      productsConcurrentRequests: parseInt(formData.productsConcurrentRequests),
+      minRank: parseInt(formData.minRank), maxRank: parseInt(formData.maxRank),
     };
 
     if (scanType === 'ASINs') {
-      if (!formData.asins.length) {
-        // display error that at least 1 asin has to be selected in order to send data
+      if (!formData.asins.length || !formData.asins.every(asin => /^[A-Z0-9]{10}$/.test(asin))) {
+        alert("Please enter at least one valid ASIN (10 characters, alphanumeric).");
+        return;
       }
+      scanData.asins = formData.asins;
     } else if (scanType === 'Category') {
-      scanData.categoryId = selectedCategory?.id;
+      if (parseInt(formData.numberOfProductsToGather) < 24) {
+        alert('Number of products to gather must be at least 24 for Category scans.');
+        return;
+      }
+      scanData.category = formData.category;
       scanData.categoryConcurrentRequests = parseInt(formData.categoryConcurrentRequests);
       scanData.strategy = formData.strategy;
       scanData.pagesSkip = parseInt(formData.pagesSkip);
-      scanData.minRank = parseInt(formData.minRank);
-      scanData.maxRank = parseInt(formData.maxRank);
-      scanData.productsToGather = parseInt(formData.productsToGather);
+      scanData.numberOfProductsToGather = parseInt(formData.numberOfProductsToGather);
     } else if (scanType === 'Deals') {
+      if (parseInt(formData.numberOfProductsToGather) < 24) {
+        alert('Number of products to gather must be at least 24 for Category scans.');
+        return;
+      }
       scanData.category = formData.category;
-      scanData.productsToGather = parseInt(formData.productsToGather);
-      scanData.productsToGather = parseInt(formData.maxRank) - parseInt(formData.minRank) + 1;
+      scanData.numberOfProductsToGather = parseInt(formData.numberOfProductsToGather);
     }
 
-    scanData.productsConcurrentRequests = parseInt(formData.productsConcurrentRequests);
-
     try {
-      const response = await fetch(`${config.apiBaseUrl}/amazon/start-scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(scanData),
-      });
-      const result = await response.json();
-      if (response.ok) {
-        onCreateScan({ ...scanData, id: result._id || scanData.id });
-        onClose();
-      } else {
-        console.error('Failed to start scan:', result.error);
+      const response = await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, { method: "POST" }, scanData);
+      if (submitRequest.error) {
+        alert(submitRequest.error.error || 'Failed to start scan. Please check your input and try again.');
+        return;
       }
+      onCreateScan({ ...scanData, _id: response._id || scanData._id });
+      onClose();
     } catch (error) {
+      alert('Error submitting scan: ' + error.message);
       console.error('Error submitting scan:', error);
     }
   };
@@ -153,7 +169,7 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
     payloadForm = (
       <div>
         <div className="mb-4">
-          <div className="mb-2">
+          <div className="mt-4">
             <input id="fileUpload" accept=".csv,.xlsx" type="file" className="hidden" onChange={(e) => {
               const file = e.target.files[0];
               if (!file) return;
@@ -195,12 +211,18 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
                   return;
                 }
 
-                const extractedAsins = rows.slice(1)
-                  .map((row) => row[asinIndex])
+                const extractedAsins = rows
+                  .slice(1)
+                  .map((row) => row[asinIndex]?.toString().trim().toUpperCase())
                   .filter((asin) => /^[A-Z0-9]{10}$/.test(asin));
 
-                setFormData(prev => ({ ...prev, asins: extractedAsins }));
-                setCurrentPage(1);
+                setFormData(prev => {
+                  const unique = new Set(prev.asins);
+                  extractedAsins.forEach(asin => unique.add(asin));
+                  const newList = Array.from(unique);
+                  setCurrentPage(Math.ceil(newList.length / itemsPerPage));
+                  return { ...prev, asins: newList };
+                });
               };
 
               const fileExtension = file.name.split('.').pop().toLowerCase();
@@ -216,27 +238,22 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
               e.target.value = null;
             }} />
             <label htmlFor="fileUpload" className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Upload file with ASINs</label>
+            <button type="button" onClick={() => setFormData(prev => ({ ...prev, asins: [] }))} className="bg-red-600 hover:cursor-pointer hover:bg-red-800 text-white p-2 ml-2 rounded">Reset</button>
           </div>
           <table className="w-full text-white">
             <thead>
               <tr>
-                <th className="p-2 border-b">ASIN</th>
-                <th className="p-2 border-b">Actions</th>
+                <th className="p-2 border-b"></th>
+                <th className="p-2 border-b"></th>
               </tr>
             </thead>
             <tbody>
               {currentAsins.map((asin, index) => (
                 <tr key={startIndex + index}>
                   <td className="p-2 border-b">
-                    <input
-                      type="text"
-                      value={asin}
-                      onChange={(e) => handleAsinChange(startIndex + index, e.target.value)}
-                      className="w-full bg-gray-700 p-1 rounded"
-                      placeholder={`ASIN ${startIndex + index + 1}`}
-                    />
+                    <span className="w-full p-1 rounded">{asin}</span>
                   </td>
-                  <td className="p-2 border-b">
+                  <td className="p-2 border-b text-right">
                     <button
                       type="button"
                       onClick={() => removeAsinField(startIndex + index)}
@@ -309,9 +326,9 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
                 onChange={handleInputChange}
                 className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
               >
-                <option value="">Select a category</option>
+                <option>Select a category</option>
                 {categories[formData.domain].map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  <option key={cat._id} value={cat.name}>{cat.name}</option>
                 ))}
               </select>
             </div>
@@ -352,31 +369,12 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-200">Min & Max Rank</label>
-              <div className="flex space-x-2">
-                <input
-                  type="number"
-                  name="minRank"
-                  value={formData.minRank}
-                  onChange={handleInputChange}
-                  min="1"
-                  className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-                <input
-                  type="number"
-                  name="maxRank"
-                  value={formData.maxRank}
-                  onChange={handleInputChange}
-                  min="1"
-                  className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
-                />
-              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-200">Products to gather</label>
                 <input
                   type="number"
-                  name="productsToGather"
-                  value={formData.productsToGather}
+                  name="numberOfProductsToGather"
+                  value={formData.numberOfProductsToGather}
                   onChange={handleInputChange}
                   min="24"
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
@@ -407,18 +405,18 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
               onChange={handleInputChange}
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
             >
-              <option value="">Select a category</option>
+              <option>Select a category</option>
               {categories[formData.domain].map(cat => (
-                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                <option key={cat._id} value={cat.name}>{cat.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-200">Products Max Requests</label>
+            <label className="block text-sm font-medium text-gray-200">Number of products to gather</label>
             <input
               type="number"
-              name="productsMaxRequests"
-              value={formData.productsMaxRequests}
+              name="numberOfProductsToGather"
+              value={formData.numberOfProductsToGather}
               onChange={handleInputChange}
               min="1"
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
@@ -463,8 +461,9 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-200">Domain</label>
+            <label htmlFor="domain" className="block text-sm font-medium text-gray-200">Domain</label>
             <select
+              id="domain"
               name="domain"
               value={formData.domain}
               onChange={handleInputChange}
@@ -476,7 +475,7 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
             </select>
           </div>
           <div>
-            <label htmlFor="productExpiration">Product expiration</label>
+            <label htmlFor="productExpiration" className="block text-sm font-medium text-gray-200">Product expiration</label>
             <input
               type="datetime-local"
               id="productExpiration"
@@ -498,6 +497,28 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
             />
           </div>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-200">Min & Max Rank</label>
+          <div className="flex space-x-2">
+            <input
+              type="number"
+              name="minRank"
+              value={formData.minRank}
+              onChange={handleInputChange}
+              min="1"
+              className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
+            />
+            <input
+              type="number"
+              name="maxRank"
+              value={formData.maxRank}
+              onChange={handleInputChange}
+              min="1"
+              className="w-1/2 p-2 bg-gray-700 border border-gray-600 rounded text-white"
+            />
+          </div>
+        </div>
+        <p className="bg-red">{JSON.stringify(submitRequest.error, null, 2)}</p>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2">
           {payloadForm}
         </form>
