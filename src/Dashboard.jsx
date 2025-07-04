@@ -1,11 +1,15 @@
 import { useState } from 'react';
+
 import SettingsModal from './SettingsModal';
 import DomainsList from './DomainsList';
 import DomainCategoriesDetails from './DomainCategoriesDetails';
 import ScansList from './ScansList';
 import ScanDetails from './ScanDetails';
 import NewScanModal from './NewScanModal';
+
 import config from './config';
+
+import useRequest from '../hooks/useRequest.hook';
 
 const Dashboard = ({ setIsLoggedIn }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -29,10 +33,6 @@ const Dashboard = ({ setIsLoggedIn }) => {
     }
   };
 
-  const handleCreateScan = (newScan) => {
-    // 
-  };
-
   const sectionStyle = "w-full text-left p-2 border-b border-white hover:bg-indigo-500 hover:cursor-pointer";
   const selectedSectionStyle = "w-full bg-indigo-400 text-left p-2 border-b border-white hover:bg-indigo-500 hover:cursor-pointer";
 
@@ -43,7 +43,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
     details = currentDomain && <DomainCategoriesDetails currentDomain={currentDomain} />;
   } else if (currentSection === "productScans") {
     section = <ScansList currentScanId={currentScanId} setCurrentScanId={setCurrentScanId} />;
-    details = currentScanId && <ScanDetails scan={productScanEntries.find(entry => entry.id === currentScanId)} />;
+    details = currentScanId && <ScanDetails />;
   }
 
   return (
@@ -97,7 +97,6 @@ const Dashboard = ({ setIsLoggedIn }) => {
       <NewScanModal
         isOpen={isNewScanModalOpen}
         onClose={() => setIsNewScanModalOpen(false)}
-        onCreateScan={handleCreateScan}
       />
     </div>
   );

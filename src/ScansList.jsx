@@ -1,21 +1,30 @@
 import { React, useState, useEffect } from 'react';
 
+import config from './config';
+
 import useRequest from '../hooks/useRequest.hook';
 
-import config from "./config";
-
-const ScansList = ({ currentScanId, setCurrentScanId, onCreateScan }) => {
+const ScansList = ({ currentScanId, setCurrentScanId }) => {
+  const [scans, setScans] = useState([]);
   const scansRequest = useRequest();
 
-  const [scans, setScans] = useState([]);
+  const fetchScans = async () => {
+    const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans`);
+    setScans(response.scans);
+  };
+
+  const handleScanDelete = async (scanId) => {
+    scansRequest.request(`${config.apiBaseUrl}/amazon/delete-scan?_id=${scanId}`, { method: "DELETE" });
+  };
 
   useEffect(() => {
-    const fetchScans = async () => {
-      const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans`);
-      setScans(response.scans);
-    };
-
     fetchScans();
+
+    // Further updates from server
+    const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scans-list/events`, { withCredentials: true });
+    eventSource.onmessage = (event) => setScans(JSON.parse(event.data));
+    eventSource.onerror = () => eventSource.close();
+    return () => eventSource.close();
   }, [])
 
   const scanStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
@@ -26,16 +35,16 @@ const ScansList = ({ currentScanId, setCurrentScanId, onCreateScan }) => {
     scansDisplay = scans.map((entry) => {
       let stateControls;
       switch (entry.state) {
-        case "ENQUEUED":
+        case "Enqueued":
           stateControls = (
-            <button className="bg-red-600 hover:bg-red-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
+            <button onClick={event => { event.stopPropagation(); handleScanDelete(entry._id); }} className="bg-red-600 hover:bg-red-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           );
           break;
-        case "ACTIVE":
+        case "Active":
           stateControls = (
             <>
               <button className="bg-green-600 hover:bg-green-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10 mb-2">
@@ -51,7 +60,7 @@ const ScansList = ({ currentScanId, setCurrentScanId, onCreateScan }) => {
             </>
           );
           break;
-        case "STALLED":
+        case "Stalled":
           stateControls = (
             <button className="bg-indigo-600 hover:bg-indigo-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
@@ -60,7 +69,7 @@ const ScansList = ({ currentScanId, setCurrentScanId, onCreateScan }) => {
             </button>
           );
           break;
-        case "PAUSED":
+        case "Paused":
           stateControls = (
             <button className="bg-indigo-600 hover:bg-indigo-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
@@ -74,8 +83,8 @@ const ScansList = ({ currentScanId, setCurrentScanId, onCreateScan }) => {
       return (
         <tr
           onClick={() => setCurrentScanId(entry._id)}
-          key={entry.id}
-          className={currentScanId === entry.id ? selectedScanStyle : scanStyle}
+          key={entry._id}
+          className={currentScanId === entry._id ? selectedScanStyle : scanStyle}
         >
           <td className="p-4">{entry._id}</td>
           <td className="p-4">{entry.type}</td>
@@ -101,9 +110,10 @@ const ScansList = ({ currentScanId, setCurrentScanId, onCreateScan }) => {
         <tr>
           <th className="p-4 text-left border-b border-white">Id</th>
           <th className="p-4 text-left border-b border-white">Type</th>
-          <th className="p-4 text-left border-b border-white">Region</th>
+          <th className="p-4 text-left border-b border-white">Domain</th>
           <th className="p-4 text-left border-b border-white">Category</th>
           <th className="p-4 text-left border-b border-white">Created</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>

@@ -3,7 +3,7 @@ import config from './config';
 import useRequest from "../hooks/useRequest.hook";
 import * as XLSX from "xlsx";
 
-const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
+const NewScanModal = ({ isOpen, onClose }) => {
   const mainCategoriesRequest = useRequest();
   const submitRequest = useRequest();
 
@@ -51,7 +51,10 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
     const fetchCategories = async () => {
       if (!categories[formData.domain]?.length) {
         const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
-        setCategories(prev => ({ ...prev, [formData.domain]: response.mainCategories || [] }));
+        if (response.mainCategories.length) {
+          setCategories(prev => ({ ...prev, [formData.domain]: response.mainCategories || [] }));
+          setFormData(prev => ({ ...prev, category: response.mainCategories[0] }));
+        }
       }
     };
     fetchCategories();
@@ -128,7 +131,7 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
         alert('Number of products to gather must be at least 24 for Category scans.');
         return;
       }
-      scanData.category = formData.category;
+      scanData.categoryId = formData.category._id;
       scanData.categoryConcurrentRequests = parseInt(formData.categoryConcurrentRequests);
       scanData.strategy = formData.strategy;
       scanData.pagesSkip = parseInt(formData.pagesSkip);
@@ -138,22 +141,15 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
         alert('Number of products to gather must be at least 24 for Category scans.');
         return;
       }
-      scanData.category = formData.category;
+      scanData.categoryId = formData.category._id;
       scanData.numberOfProductsToGather = parseInt(formData.numberOfProductsToGather);
     }
 
-    try {
-      const response = await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, { method: "POST" }, scanData);
-      if (submitRequest.error) {
-        alert(submitRequest.error.error || 'Failed to start scan. Please check your input and try again.');
-        return;
-      }
-      onCreateScan({ ...scanData, _id: response._id || scanData._id });
-      onClose();
-    } catch (error) {
-      alert('Error submitting scan: ' + error.message);
-      console.error('Error submitting scan:', error);
+    await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, { method: "POST" }, scanData);
+    if (submitRequest.error) {
+      return;
     }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -326,9 +322,8 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
                 onChange={handleInputChange}
                 className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
               >
-                <option>Select a category</option>
                 {categories[formData.domain].map(cat => (
-                  <option key={cat._id} value={cat.name}>{cat.name}</option>
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
                 ))}
               </select>
             </div>
@@ -394,6 +389,7 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
       payloadForm = <p>No complete categories are available for this domain. Please, gather categories in this domain first.</p>
     }
   } else if (scanType == "Deals") {
+    if (categories[formData.domain].length) {
     payloadForm = (
       <div>
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -405,7 +401,6 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
               onChange={handleInputChange}
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
             >
-              <option>Select a category</option>
               {categories[formData.domain].map(cat => (
                 <option key={cat._id} value={cat.name}>{cat.name}</option>
               ))}
@@ -431,6 +426,9 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
         </button>
       </div>
     );
+    } else {
+      payloadForm = <p>No complete categories are available for this domain. Please, gather categories in this domain first.</p>
+    }
   }
 
   return (
@@ -518,10 +516,10 @@ const NewScanModal = ({ isOpen, onClose, onCreateScan }) => {
             />
           </div>
         </div>
-        <p className="bg-red">{JSON.stringify(submitRequest.error, null, 2)}</p>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2">
           {payloadForm}
         </form>
+        { submitRequest.error && <p className="bg-red-500 rounded p-2 my-2">{submitRequest.error.error}</p> }
       </div>
     </div>
   );
