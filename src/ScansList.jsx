@@ -10,6 +10,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
 
   const fetchScans = async () => {
     const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans`);
+    console.log(JSON.stringify(response.scans, null, 2));
     setScans(response.scans);
   };
 
@@ -35,7 +36,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
     scansDisplay = scans.map((entry) => {
       let stateControls;
       switch (entry.state) {
-        case "Enqueued":
+        case "enqueued":
           stateControls = (
             <button onClick={event => { event.stopPropagation(); handleScanDelete(entry._id); }} className="bg-red-600 hover:bg-red-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
@@ -44,7 +45,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
             </button>
           );
           break;
-        case "Active":
+        case "active":
           stateControls = (
             <>
               <button className="bg-green-600 hover:bg-green-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10 mb-2">
@@ -60,7 +61,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
             </>
           );
           break;
-        case "Stalled":
+        case "stalled":
           stateControls = (
             <button className="bg-indigo-600 hover:bg-indigo-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
@@ -69,7 +70,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
             </button>
           );
           break;
-        case "Paused":
+        case "paused":
           stateControls = (
             <button className="bg-indigo-600 hover:bg-indigo-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">

@@ -7,13 +7,13 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const mainCategoriesRequest = useRequest();
   const submitRequest = useRequest();
 
-  const [scanType, setScanType] = useState('ASINs');
+  const [scanType, setScanType] = useState('ASIN');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     domain: 'com',
-    asins: [],
-    productsConcurrentRequests: 1,
+    ASINs: [],
+    maxProductsConcurrentRequests: 1,
     numberOfProductsToGather: 10000,
     categoryConcurrentRequests: 1,
     strategy: 'breadth-first-left',
@@ -61,11 +61,11 @@ const NewScanModal = ({ isOpen, onClose }) => {
   }, [formData.domain]);
 
   useEffect(() => {
-    const totalPages = Math.ceil(formData.asins.length / itemsPerPage);
+    const totalPages = Math.ceil(formData.ASINs.length / itemsPerPage);
     if (currentPage > totalPages) {
       setCurrentPage(totalPages || 1);
     }
-  }, [formData.asins, currentPage, itemsPerPage]);
+  }, [formData.ASINs, currentPage, itemsPerPage]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -91,23 +91,23 @@ const NewScanModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    if (formData.asins.includes(asin)) {
+    if (formData.ASINs.includes(asin)) {
       alert('This ASIN is already in the list.');
       return;
     }
 
     setFormData(prev => {
-      const updatedAsins = [...prev.asins, asin];
+      const updatedAsins = [...prev.ASINs, asin];
       setCurrentPage(Math.ceil(updatedAsins.length / itemsPerPage));
-      return { ...prev, asins: updatedAsins };
+      return { ...prev, ASINs: updatedAsins };
     });
 
     setNewAsin('');
   };
 
   const removeAsinField = (index) => {
-    const newAsins = formData.asins.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, asins: newAsins }));
+    const newASINs = formData.ASINs.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, ASINs: newASINs }));
   };
 
   const handleSubmit = async (e) => {
@@ -116,16 +116,16 @@ const NewScanModal = ({ isOpen, onClose }) => {
       type: scanType,
       domain: formData.domain,
       productExpiration: formData.productExpiration,
-      productsConcurrentRequests: parseInt(formData.productsConcurrentRequests),
+      maxProductsConcurrentRequests: parseInt(formData.maxProductsConcurrentRequests),
       minRank: parseInt(formData.minRank), maxRank: parseInt(formData.maxRank),
     };
 
-    if (scanType === 'ASINs') {
-      if (!formData.asins.length || !formData.asins.every(asin => /^[A-Z0-9]{10}$/.test(asin))) {
+    if (scanType === 'ASIN') {
+      if (!formData.ASINs.length || !formData.ASINs.every(asin => /^[A-Z0-9]{10}$/.test(asin))) {
         alert("Please enter at least one valid ASIN (10 characters, alphanumeric).");
         return;
       }
-      scanData.asins = formData.asins;
+      scanData.ASINs = formData.ASINs;
     } else if (scanType === 'Category') {
       if (parseInt(formData.numberOfProductsToGather) < 24) {
         alert('Number of products to gather must be at least 24 for Category scans.');
@@ -154,14 +154,14 @@ const NewScanModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const totalPages = formData.asins.length ? Math.ceil(formData.asins.length / itemsPerPage) : 1;
+  const totalPages = formData.ASINs.length ? Math.ceil(formData.ASINs.length / itemsPerPage) : 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
 
-  const currentAsins = formData.asins.slice(startIndex, endIndex);
+  const currentAsins = formData.ASINs.slice(startIndex, endIndex);
 
   let payloadForm;
-  if (scanType == "ASINs") {
+  if (scanType == "ASIN") {
     payloadForm = (
       <div>
         <div className="mb-4">
@@ -207,17 +207,17 @@ const NewScanModal = ({ isOpen, onClose }) => {
                   return;
                 }
 
-                const extractedAsins = rows
+                const extractedASINs = rows
                   .slice(1)
                   .map((row) => row[asinIndex]?.toString().trim().toUpperCase())
                   .filter((asin) => /^[A-Z0-9]{10}$/.test(asin));
 
                 setFormData(prev => {
-                  const unique = new Set(prev.asins);
-                  extractedAsins.forEach(asin => unique.add(asin));
+                  const unique = new Set(prev.ASINs);
+                  extractedASINs.forEach(asin => unique.add(asin));
                   const newList = Array.from(unique);
                   setCurrentPage(Math.ceil(newList.length / itemsPerPage));
-                  return { ...prev, asins: newList };
+                  return { ...prev, ASINs: newList };
                 });
               };
 
@@ -234,7 +234,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
               e.target.value = null;
             }} />
             <label htmlFor="fileUpload" className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Upload file with ASINs</label>
-            <button type="button" onClick={() => setFormData(prev => ({ ...prev, asins: [] }))} className="bg-red-600 hover:cursor-pointer hover:bg-red-800 text-white p-2 ml-2 rounded">Reset</button>
+            <button type="button" onClick={() => setFormData(prev => ({ ...prev, ASINs: [] }))} className="bg-red-600 hover:cursor-pointer hover:bg-red-800 text-white p-2 ml-2 rounded">Reset</button>
           </div>
           <table className="w-full text-white">
             <thead>
@@ -453,7 +453,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
               onChange={(e) => setScanType(e.target.value)}
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
             >
-              <option value="ASINs">ASINs</option>
+              <option value="ASIN">ASIN</option>
               <option value="Category">Category</option>
               <option value="Deals">Deals</option>
             </select>
@@ -487,8 +487,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
             <label className="block text-sm font-medium text-gray-200">Products Concurrent Requests</label>
             <input
               type="number"
-              name="productsConcurrentRequests"
-              value={formData.productsConcurrentRequests}
+              name="maxProductsConcurrentRequests"
+              value={formData.maxProductsConcurrentRequests}
               onChange={handleInputChange}
               min="1"
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
