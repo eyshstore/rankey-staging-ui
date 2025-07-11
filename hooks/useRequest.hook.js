@@ -33,13 +33,14 @@ const useRequest = () => {
       if (!response.ok) {
         const errorMessage = await response.json();
         setError(errorMessage);
-        return;
+        return { error: errorMessage.error };
       }
 
       const result = await response.json();
       return result;
     } catch (error) {
       setError(error);
+      return { error };
     } finally {
       setLoading(false);
       setController(null);

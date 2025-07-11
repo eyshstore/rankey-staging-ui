@@ -10,12 +10,12 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
 
   const fetchScans = async () => {
     const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans`);
-    console.log(JSON.stringify(response.scans, null, 2));
+    console.log(`INITIAL SCANS: ${JSON.stringify(response.scans, null, 2)}`)
     setScans(response.scans);
   };
 
   const handleScanDelete = async (scanId) => {
-    scansRequest.request(`${config.apiBaseUrl}/amazon/delete-scan?_id=${scanId}`, { method: "DELETE" });
+    await scansRequest.request(`${config.apiBaseUrl}/amazon/delete-scan?_id=${scanId}`, { method: "DELETE" });
   };
 
   useEffect(() => {
@@ -23,7 +23,10 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
 
     // Further updates from server
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scans-list/events`, { withCredentials: true });
-    eventSource.onmessage = (event) => setScans(JSON.parse(event.data));
+    eventSource.onmessage = (event) => {
+      console.log(`Scans: ${JSON.stringify(event.data, null, 2)}`);
+      setScans(JSON.parse(event.data))
+    };
     eventSource.onerror = () => eventSource.close();
     return () => eventSource.close();
   }, [])
@@ -81,7 +84,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
           break;
         case "completed":
             stateControls = (
-              <button className="bg-red-600 hover:bg-indigo-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10">
+              <button className="bg-red-600 hover:bg-indigo-800 hover:cursor-pointer text-white p-2 rounded flex items-center justify-center w-10 h-10" onClick={() => handleScanDelete(entry._id)}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                 </svg>
@@ -90,17 +93,20 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
             break;
       }
 
+      console.log(entry);
+
       return (
         <tr
           onClick={() => setCurrentScanId(entry._id)}
           key={entry._id}
           className={currentScanId === entry._id ? selectedScanStyle : scanStyle}
         >
-          <td className="p-4">{entry._id}</td>
+          <td className="p-4">{ entry._id.slice(0, 8) + "..." }</td>
           <td className="p-4">{entry.type}</td>
-          <td className="p-4">{entry.region}</td>
-          <td className="p-4">{entry.category}</td>
-          <td className="py-4 text-right">{stateControls}</td>
+          <td className="p-4">{entry.state}</td>
+          <td className="p-4">{entry.domain}</td>
+          <td className="p-4">{ entry.type == "Category" ? "CATEGORY" : "-" }</td>
+          <td className="p-4 text-center">{stateControls}</td>
         </tr>
       );
     });
@@ -120,10 +126,10 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
         <tr>
           <th className="p-4 text-left border-b border-white">Id</th>
           <th className="p-4 text-left border-b border-white">Type</th>
+          <th className="p-4 text-left border-b border-white">State</th>
           <th className="p-4 text-left border-b border-white">Domain</th>
           <th className="p-4 text-left border-b border-white">Category</th>
-          <th className="p-4 text-left border-b border-white">Created</th>
-          <th></th>
+          <th className="p-4 text-left border-b border-white"></th>
         </tr>
       </thead>
       <tbody>

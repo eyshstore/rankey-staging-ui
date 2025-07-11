@@ -145,8 +145,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
       scanData.numberOfProductsToGather = parseInt(formData.numberOfProductsToGather);
     }
 
-    await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, { method: "POST" }, scanData);
-    if (submitRequest.error) {
+    const result = await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, { method: "POST" }, scanData);
+    if (result.error) {
       return;
     }
     onClose();
