@@ -3,8 +3,30 @@ import { React, useState, useEffect } from 'react';
 import useRequest from '../hooks/useRequest.hook';
 import config from './config';
 
-const ScanDetails = () => {
-  
+const ScanDetails = ({ currentScanId }) => {
+  const [scanId, setScanId] = useState("");
+  const scanDetailsRequest = useRequest();
+
+  const fetchScanDetails = async () => {
+    const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scan-details`);
+    setScanId(response.scan._id);
+  };
+
+  useEffect(() => {
+    if (scanId == currentScanId) {
+      const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scan/events`, { withCredentials: true });
+      eventSource.onmessage = (event) => {
+        console.log(`Scan: ${JSON.stringify(event.data, null, 2)}`);
+      };
+      eventSource.onerror = () => eventSource.close();
+      return () => eventSource.close();
+    }
+  }, [scanId]);
+
+  if (fetchScanDetails.loading) {
+    return <p>Loading...</p>;
+  }
+
   return (
     <div className="bg-gray-800 p-4 rounded">
       <h2 className="text-lg font-bold mb-2">Scan Details</h2>

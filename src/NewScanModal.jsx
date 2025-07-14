@@ -150,6 +150,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
       return;
     }
     onClose();
+    setFormData(prev => ({ ...prev, ASINs: [] }));
   };
 
   if (!isOpen) return null;
@@ -210,11 +211,10 @@ const NewScanModal = ({ isOpen, onClose }) => {
                 const extractedASINs = rows
                   .slice(1)
                   .map((row) => row[asinIndex]?.toString().trim().toUpperCase())
-                  .filter((asin) => /^[A-Z0-9]{10}$/.test(asin));
+                  .filter((ASIN) => /^[A-Z0-9]{10}$/.test(ASIN));
 
                 setFormData(prev => {
-                  const unique = new Set(prev.ASINs);
-                  extractedASINs.forEach(asin => unique.add(asin));
+                  const unique = new Set(extractedASINs);
                   const newList = Array.from(unique);
                   setCurrentPage(Math.ceil(newList.length / itemsPerPage));
                   return { ...prev, ASINs: newList };

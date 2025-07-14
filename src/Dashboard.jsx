@@ -43,7 +43,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
     details = currentDomain && <DomainCategoriesDetails currentDomain={currentDomain} />;
   } else if (currentSection === "productScans") {
     section = <ScansList currentScanId={currentScanId} setCurrentScanId={setCurrentScanId} />;
-    details = currentScanId && <ScanDetails />;
+    details = currentScanId && <ScanDetails currentScanId={currentScanId} />;
   }
 
   return (
