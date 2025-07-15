@@ -21,6 +21,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
     scrapeAllSections: false,
     minRank: 1,
     maxRank: 10000,
+
+    useProductExpiration: false,
     productExpiration: getFormattedDateTime(new Date()),
   });
   const [newAsin, setNewAsin] = useState('');
@@ -45,7 +47,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     const minutes = pad(date.getMinutes());
 
     return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
+  }
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -70,17 +72,17 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name == "maxRank" && value < formData.minRank) {
+    if (name === "maxRank" && value < formData.minRank) {
       e.target.value = value + 1;
       return;
     }
 
-    if (name == "minRank" && value > formData.maxRank) {
+    if (name === "minRank" && value > formData.maxRank) {
       e.target.value = value - 1;
       return;
     }
 
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value, }));
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const addAsinField = () => {
@@ -97,9 +99,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
     }
 
     setFormData(prev => {
-      const updatedAsins = [...prev.ASINs, asin];
-      setCurrentPage(Math.ceil(updatedAsins.length / itemsPerPage));
-      return { ...prev, ASINs: updatedAsins };
+      const updatedASINs = [...prev.ASINs, asin];
+      setCurrentPage(Math.ceil(updatedASINs.length / itemsPerPage));
+      return { ...prev, ASINs: updatedASINs };
     });
 
     setNewAsin('');
@@ -115,9 +117,13 @@ const NewScanModal = ({ isOpen, onClose }) => {
     const scanData = {
       type: scanType,
       domain: formData.domain,
-      productExpiration: formData.productExpiration,
       maxProductsConcurrentRequests: parseInt(formData.maxProductsConcurrentRequests),
-      minRank: parseInt(formData.minRank), maxRank: parseInt(formData.maxRank),
+      
+      minRank: parseInt(formData.minRank),
+      maxRank: parseInt(formData.maxRank),
+
+      useProductExpiration: formData.useProductExpiration,
+      productExpiration: formData.productExpiration,
     };
 
     if (scanType === 'ASIN') {
@@ -138,7 +144,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
       scanData.numberOfProductsToGather = parseInt(formData.numberOfProductsToGather);
     } else if (scanType === 'Deals') {
       if (parseInt(formData.numberOfProductsToGather) < 24) {
-        alert('Number of products to gather must be at least 24 for Category scans.');
+        alert('Number of products to gather must be at least 24 for Deals scans.');
         return;
       }
       scanData.categoryId = formData.category._id;
@@ -162,7 +168,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const currentAsins = formData.ASINs.slice(startIndex, endIndex);
 
   let payloadForm;
-  if (scanType == "ASIN") {
+  if (scanType === "ASIN") {
     payloadForm = (
       <div>
         <div className="mb-4">
@@ -309,7 +315,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
         </button>
       </div>
     );
-  } else if (scanType == "Category") {
+  } else if (scanType === "Category") {
     if (categories[formData.domain].length) {
       payloadForm = (
         <div>
@@ -386,48 +392,48 @@ const NewScanModal = ({ isOpen, onClose }) => {
         </div>
       );
     } else {
-      payloadForm = <p>No complete categories are available for this domain. Please, gather categories in this domain first.</p>
+      payloadForm = <p>No complete categories are available for this domain. Please, gather categories in this domain first.</p>;
     }
-  } else if (scanType == "Deals") {
+  } else if (scanType === "Deals") {
     if (categories[formData.domain].length) {
-    payloadForm = (
-      <div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-200">Category</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-            >
-              {categories[formData.domain].map(cat => (
-                <option key={cat._id} value={cat.name}>{cat.name}</option>
-              ))}
-            </select>
+      payloadForm = (
+        <div>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-200">Category</label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              >
+                {categories[formData.domain].map(cat => (
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-200">Number of products to gather</label>
+              <input
+                type="number"
+                name="numberOfProductsToGather"
+                value={formData.numberOfProductsToGather}
+                onChange={handleInputChange}
+                min="24"
+                className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-200">Number of products to gather</label>
-            <input
-              type="number"
-              name="numberOfProductsToGather"
-              value={formData.numberOfProductsToGather}
-              onChange={handleInputChange}
-              min="1"
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
-            />
-          </div>
+          <button
+            type="submit"
+            className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
+          >
+            Start Scan
+          </button>
         </div>
-        <button
-          type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded mt-4"
-        >
-          Start Scan
-        </button>
-      </div>
-    );
+      );
     } else {
-      payloadForm = <p>No complete categories are available for this domain. Please, gather categories in this domain first.</p>
+      payloadForm = <p>No complete categories are available for this domain. Please, gather categories in this domain first.</p>;
     }
   }
 
@@ -473,14 +479,25 @@ const NewScanModal = ({ isOpen, onClose }) => {
             </select>
           </div>
           <div>
-            <label htmlFor="productExpiration" className="block text-sm font-medium text-gray-200">Product expiration</label>
+            <label className="block text-sm font-medium text-gray-200 flex items-center">
+              <input
+                type="checkbox"
+                id="useProductExpiration"
+                name="useProductExpiration"
+                checked={formData.useProductExpiration}
+                onChange={handleInputChange}
+                className="mr-2"
+              />
+              Enable Product Expiration Check
+            </label>
             <input
               type="datetime-local"
               id="productExpiration"
               name="productExpiration"
               value={formData.productExpiration}
               onChange={handleInputChange}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+              disabled={!formData.useProductExpiration}
+              className={`w-full p-2 bg-gray-700 border border-gray-600 rounded text-white ${!formData.useProductExpiration ? 'opacity-50 cursor-not-allowed' : ''}`}
             />
           </div>
           <div>
@@ -519,7 +536,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2">
           {payloadForm}
         </form>
-        { submitRequest.error && <p className="bg-red-500 rounded p-2 my-2">{submitRequest.error.error}</p> }
+        {submitRequest.error && <p className="bg-red-500 rounded p-2 my-2">{submitRequest.error.error}</p>}
       </div>
     </div>
   );
