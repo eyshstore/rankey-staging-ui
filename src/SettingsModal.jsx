@@ -16,7 +16,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     const fetchProviders = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider`, {
+        const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-providers`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -25,7 +25,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
         setCurrentScrapingProvider(data.selectedProviderIndex);
         setApiKeyInputs(data.providers.reduce((acc, provider) => ({
           ...acc,
-          [provider.name]: provider.hasApiKey ? provider.apiKey : ''
+          [provider.name]: (provider.hasApiKey ? provider.apiKey : '')
         }), {}));
       } catch (err) {
         setError('Failed to fetch scraping providers');
@@ -39,6 +39,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   // Set up SSE for real-time provider status
+  /*
   useEffect(() => {
     if (!isOpen) return;
 
@@ -65,6 +66,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
       source.close();
     };
   }, [isOpen]);
+  */
 
   // Handle selecting a provider
   const handleSelectProvider = async (providerName, index) => {
@@ -82,7 +84,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
         setCurrentScrapingProvider(index);
         setSuccessMessage(`Selected provider: ${providerName}`);
         // Refresh provider status
-        const statusResponse = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider`, {
+        const statusResponse = await fetch(`${config.apiBaseUrl}/amazon/scraping-providers`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -176,8 +178,6 @@ const SettingsModal = ({ isOpen, onClose }) => {
                 <tr>
                   <th className="border-b border-gray-200 p-4 text-left text-white">Name</th>
                   <th className="border-b border-gray-200 p-4 text-left text-white">API Key</th>
-                  <th className="border-b border-gray-200 p-4 text-left text-white">Concurrent Requests</th>
-                  <th className="border-b border-gray-200 p-4 text-left text-white">Requests Remaining</th>
                   <th className="border-b border-gray-200 p-4 text-left text-white">Actions</th>
                 </tr>
               </thead>
