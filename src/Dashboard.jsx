@@ -10,6 +10,7 @@ import NewScanModal from './NewScanModal';
 import config from './config';
 
 import useRequest from '../hooks/useRequest.hook';
+import ProductsModal from './ProductsModal';
 
 const Dashboard = ({ setIsLoggedIn }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -20,6 +21,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
   const [currentScanId, setCurrentScanId] = useState('');
 
   const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
+  const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -97,6 +99,10 @@ const Dashboard = ({ setIsLoggedIn }) => {
       <NewScanModal
         isOpen={isNewScanModalOpen}
         onClose={() => setIsNewScanModalOpen(false)}
+      />
+      <ProductsModal
+        isOpen={isProductsModalOpen}
+        onClose={() => setIsProductsModalOpen(false)}
       />
     </div>
   );

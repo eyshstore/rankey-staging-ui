@@ -24,7 +24,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     ASINs: [],
     maxProductsConcurrentRequests: 1,
     numberOfProductsToGather: 10000,
-    categoryConcurrentRequests: 1,
+    maxCategoriesConcurrentRequests: 1,
     strategy: 'breadth-first-left',
     pagesSkip: 5,
     scrapeAllSections: false,
@@ -53,17 +53,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
   ];
 
   // API Calls
-  const checkScrapingProviderStatus = useCallback(async () => {
-    try {
-      const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider-has-status-endpoint`, { credentials: 'include' });
-      const result = await response.json();
-      setScrapingHasStatusEndpoint(result.scrapingHasProviderStatusEndpoint);
-    } catch (error) {
-      console.error('Failed to check scraping provider status endpoint', error);
-      setScrapingHasStatusEndpoint(false);
-    }
-  }, []);
-
   const fetchCategories = useCallback(async () => {
     if (!categories[formData.domain]?.length) {
       const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
@@ -77,10 +66,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
   // Effects
   useEffect(() => {
     if (isOpen) {
-      checkScrapingProviderStatus();
       fetchCategories();
     }
-  }, [isOpen, checkScrapingProviderStatus, fetchCategories]);
+  }, [isOpen, fetchCategories]);
 
   useEffect(() => {
     const totalPages = Math.ceil(formData.ASINs.length / itemsPerPage);
@@ -185,9 +173,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     const scanData = {
       type: scanType,
       domain: formData.domain,
-      ...(scanType !== 'ASIN' || !scrapingHasStatusEndpoint
-        ? { maxProductsConcurrentRequests: Number(formData.maxProductsConcurrentRequests) }
-        : {}),
+      maxProductsConcurrentRequests: Number(formData.maxProductsConcurrentRequests),
       minRank: Number(formData.minRank),
       maxRank: Number(formData.maxRank),
       useProductExpiration: formData.useProductExpiration,
@@ -206,7 +192,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
         return;
       }
       scanData.categoryId = formData.category?._id;
-      scanData.categoryConcurrentRequests = Number(formData.categoryConcurrentRequests);
+      scanData.maxCategoriesConcurrentRequests = Number(formData.maxCategoriesConcurrentRequests);
       scanData.strategy = formData.strategy;
       scanData.pagesSkip = Number(formData.pagesSkip);
       scanData.numberOfProductsToGather = Number(formData.numberOfProductsToGather);
@@ -290,15 +276,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
           }
           options={categories[formData.domain].map((cat) => ({ value: cat._id, label: cat.name }))}
         />
-        {!scrapingHasStatusEndpoint && (
-          <NumberInput
-            label="Categories Concurrent Requests"
-            name="categoryConcurrentRequests"
-            value={formData.categoryConcurrentRequests}
-            onChange={handleInputChange}
-            min="1"
-          />
-        )}
         <div className="space-y-2">
         <CheckboxInput
           label="Enable Product Expiration Check"
@@ -379,7 +356,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
             {currentAsins.map((asin, index) => (
               <tr key={startIndex + index} className="border-b border-gray-600">
                 <td className="p-2">
-                  <span className="block p-1 rounded bg-gray-600">{asin}</span>
+                  <span className="block p-1 rounded">{asin}</span>
                 </td>
                 <td className="p-2 text-right">
                   <button
@@ -532,15 +509,15 @@ const NewScanModal = ({ isOpen, onClose }) => {
             onChange={handleInputChange}
             options={domains}
           />
-          {!scrapingHasStatusEndpoint && (
-            <NumberInput
-              label="Products Concurrent Requests"
-              name="maxProductsConcurrentRequests"
-              value={formData.maxProductsConcurrentRequests}
-              onChange={handleInputChange}
-              min="1"
-            />
-          )}
+        </div>
+        <div className="mb-4">
+          <NumberInput
+            label="Max Products Concurrent Requests"
+            name="maxProductsConcurrentRequests"
+            value={formData.maxProductsConcurrentRequests}
+            onChange={handleInputChange}
+            min="1"
+          />
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4">
           {scanType === 'ASIN' && <ASINForm />}

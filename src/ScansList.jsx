@@ -31,7 +31,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
   }, [])
 
   const scanStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
-  const activeScanStyle = "border-b border-indigo-200 hover:bg-indigo-800 hover:cursor-pointer";
+  const activeScanStyle = "bg-green-800 border-b border-indigo-200 hover:bg-indigo-800 hover:cursor-pointer";
   const selectedScanStyle = "bg-indigo-400 border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
 
   let scansDisplay;
@@ -162,8 +162,6 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
           <td className="p-4">{entry.type}</td>
           <td className="p-4">{ capitalize(entry.state) }</td>
           <td className="p-4">{entry.domain}</td>
-          <td className="p-4">{ `${entry.minRank} - ${entry.maxRank}` }</td>
-          <td className="p-4">{ entry.useProductExpiration ? formatDate(new Date(entry.productExpiration)) : "-" }</td>
           <td className="p-4 text-center">{stateControls}</td>
         </tr>
       );
@@ -186,8 +184,6 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
           <th className="p-4 text-left border-b border-white">Type</th>
           <th className="p-4 text-left border-b border-white">State</th>
           <th className="p-4 text-left border-b border-white">Domain</th>
-          <th className="p-4 text-left border-b border-white">Rank Range</th>
-          <th className="p-4 text-left border-b border-white">Product Expiration</th>
           <th className="p-4 text-left border-b border-white"></th>
         </tr>
       </thead>

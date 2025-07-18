@@ -29,6 +29,7 @@ const ScanDetails = ({ currentScanId }) => {
 
   return (
     <div className="bg-gray-800 p-4 rounded">
+      <button className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Products</button>
       <h2 className="text-lg font-bold mb-2">Scan Details</h2>
       <table className="border-collapse">
         <tbody>
