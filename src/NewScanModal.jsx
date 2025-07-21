@@ -22,7 +22,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     domain: 'com',
     ASINs: [],
-    maxProductsConcurrentRequests: 1,
+    maxConcurrentProductRequests: 1,
     numberOfProductsToGather: 10000,
     maxCategoriesConcurrentRequests: 1,
     strategy: 'breadth-first-left',
@@ -53,7 +53,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
   ];
 
   // API Calls
-  const fetchCategories = useCallback(async () => {
+  const fetchCategories = async () => {
     if (!categories[formData.domain]?.length) {
       const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
       if (response.mainCategories?.length) {
@@ -61,14 +61,14 @@ const NewScanModal = ({ isOpen, onClose }) => {
         setFormData((prev) => ({ ...prev, category: response.mainCategories[0] }));
       }
     }
-  }, [formData.domain, mainCategoriesRequest]);
+  };
 
   // Effects
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
     }
-  }, [isOpen, fetchCategories]);
+  }, [isOpen, formData.domain]);
 
   useEffect(() => {
     const totalPages = Math.ceil(formData.ASINs.length / itemsPerPage);
@@ -173,7 +173,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     const scanData = {
       type: scanType,
       domain: formData.domain,
-      maxProductsConcurrentRequests: Number(formData.maxProductsConcurrentRequests),
+      maxConcurrentProductRequests: Number(formData.maxConcurrentProductRequests),
       minRank: Number(formData.minRank),
       maxRank: Number(formData.maxRank),
       useProductExpiration: formData.useProductExpiration,
@@ -513,8 +513,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
         <div className="mb-4">
           <NumberInput
             label="Max Products Concurrent Requests"
-            name="maxProductsConcurrentRequests"
-            value={formData.maxProductsConcurrentRequests}
+            name="maxConcurrentProductRequests"
+            value={formData.maxConcurrentProductRequests}
             onChange={handleInputChange}
             min="1"
           />

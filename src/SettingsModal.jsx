@@ -1,6 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import config from './config';
 
+/*
+  Algorithm:
+  currentScrapingProvider = MockAmazon
+
+  select(scrapingProvider);
+
+  func select(scrapingProvider) {
+    if (!scrapingProvider.hasApiKey()) {
+      let apiKey = prompt(`Enter API key for ${scrapingProvider.name}`);
+      if (!apiKey) {
+        alert("No API key was entered.");
+        return;
+      }
+
+      await scrapingProvider.set(apiKey);
+    }
+
+    try {
+      const status = await scrapingProvider.getStatus();
+
+      if (!status) {
+        // 403 Error
+        alert(`Failed to retrieve info about ${scrapingProvider.name}. Try later.`);
+        return;
+      }
+
+      currentScrapingProvider = scrapingProvider;
+    } catch (error) {
+      alert(`Failed to retrieve info about ${scrapingProvider.name}. Try later.`);
+      return;
+    }
+  }
+
+  <button scrapingProvider=MockAmazon onClick=select>
+  <button scrapingProvider=ScrapingBee onClick=select>
+  <button scrapingProvider=ScrapingAnt onClick=select>
+  */
+
 const SettingsModal = ({ isOpen, onClose }) => {
   const [providers, setProviders] = useState([]);
   const [currentScrapingProvider, setCurrentScrapingProvider] = useState(-1);

@@ -56,15 +56,6 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
           stateControls = (
             <div className="flex flex-col space-y-2">
               <button
-                onClick={(e) => handlePause(entry._id, e)}
-                className="bg-yellow-600 hover:bg-yellow-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
-                title="Pause Scan"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-                </svg>
-              </button>
-              <button
                 onClick={(e) => handleStop(entry._id, e)}
                 className="bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Stop Scan"
