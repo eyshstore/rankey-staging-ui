@@ -5,7 +5,7 @@ const useRequest = () => {
   const [loading, setLoading] = useState(false);
   const [controller, setController] = useState(null);
 
-  const request = useCallback(async (url, options = {}, body = {}) => {
+  const request = async (url, options = {}, body = {}) => {
     setLoading(true);
     setError(null);
 
@@ -45,7 +45,7 @@ const useRequest = () => {
       setLoading(false);
       setController(null);
     }
-  }, []);
+  };
 
   const cancel = useCallback(() => {
     if (controller) {

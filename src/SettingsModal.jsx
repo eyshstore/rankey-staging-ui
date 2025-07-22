@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+
 import config from './config';
+
+import useRequest from "../hooks/useRequest.hook";
 
 /*
   Algorithm:
-  currentScrapingProvider = MockAmazon
+  currentScrapingProviderName = MockAmazon
 
   select(scrapingProvider);
 
@@ -27,7 +30,7 @@ import config from './config';
         return;
       }
 
-      currentScrapingProvider = scrapingProvider;
+      currentScrapingProviderName = scrapingProvider;
     } catch (error) {
       alert(`Failed to retrieve info about ${scrapingProvider.name}. Try later.`);
       return;
@@ -41,148 +44,84 @@ import config from './config';
 
 const SettingsModal = ({ isOpen, onClose }) => {
   const [providers, setProviders] = useState([]);
-  const [currentScrapingProvider, setCurrentScrapingProvider] = useState(-1);
-  const [apiKeyInputs, setApiKeyInputs] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [currentScrapingProviderName, setCurrentScrapingProviderName] = useState(-1);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
+
+  const scrapingProvidersRequest = useRequest();
+  const selectScrapingProviderRequest = useRequest();
+  const scrapingProviderKeyRequest = useRequest();
+
+  const fetchProviders = async () => {
+    const response = await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers`);
+    if (scrapingProvidersRequest.error) {
+      return;
+    }
+
+    setProviders(response.providerList);
+    setCurrentScrapingProviderName(response.currentScrapingProviderName);
+  };
 
   // Fetch providers on modal open
   useEffect(() => {
     if (!isOpen) return;
-
-    const fetchProviders = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-providers`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const data = await response.json();
-        setProviders(data.providers);
-        setCurrentScrapingProvider(data.selectedProviderIndex);
-        setApiKeyInputs(data.providers.reduce((acc, provider) => ({
-          ...acc,
-          [provider.name]: (provider.hasApiKey ? provider.apiKey : '')
-        }), {}));
-      } catch (err) {
-        setError('Failed to fetch scraping providers');
-        console.error('Fetch providers error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProviders();
   }, [isOpen]);
 
-  // Set up SSE for real-time provider status
-  /*
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const source = new EventSource(`${config.apiBaseUrl}/amazon/scraping-provider/events`, {
-      withCredentials: true
-    });
-
-    source.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'provider_status_update') {
-        setProviders(prev => prev.map(provider => ({
-          ...provider,
-          status: data.data[provider.name] || { error: 'Status not supported' }
-        })));
-      }
-    };
-
-    source.onerror = () => {
-      setError('Lost connection to provider status updates');
-      source.close();
-    };
-
-    return () => {
-      source.close();
-    };
-  }, [isOpen]);
-  */
-
   // Handle selecting a provider
-  const handleSelectProvider = async (providerName, index) => {
-    try {
-      setError(null);
-      setSuccessMessage(null);
-      const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scrapingProvider: providerName })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setCurrentScrapingProvider(index);
-        setSuccessMessage(`Selected provider: ${providerName}`);
-        // Refresh provider status
-        const statusResponse = await fetch(`${config.apiBaseUrl}/amazon/scraping-providers`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const statusData = await statusResponse.json();
-        setProviders(statusData.providers);
-      } else {
-        setError(data.error || 'Failed to select provider');
-      }
-    } catch (err) {
-      setError('Failed to select provider');
-      console.error('Select provider error:', err);
-    }
-  };
+  const handleSelectProvider = async (providerName) => {
+    const response = await fetch(`${config.apiBaseUrl}/amazon/select-scraping-provider`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ providerName }),
+    });
+    
+    if (response.ok) {
+      
+    } else {
+      const error = await response.json();
+      console.log(error);
+      switch (error.message) {
+        case "No API Key":
+          const apiKey = prompt(`Enter ${providerName}'s API key.`);
+          if (!apiKey) {
+            alert("No API key was provided.");
+            return;
+          }
 
-  const handleApiKeyChange = (providerName, value) => {
-    setApiKeyInputs(prev => ({ ...prev, [providerName]: value }));
+          await scrapingProviderKeyRequest.request(`${config.apiBaseUrl}/amazon/scraping-provider-key`, { method: "POST" }, { apiKey, providerName });
+          if (scrapingProviderKeyRequest.error) {
+            alert(`Failed to update scraping provider API key: ${scrapingProviderKeyRequest.error}`);
+            return;
+          }
+
+          fetchProviders();
+          return;
+        case "Failed to check status of scraping provider":
+          alert("Failed to check status of scraping provider. Please, try again later.");
+          return;
+        
+        default:
+          console.log("Successfully selected scraping provider.");
+          return;
+      }
+    }
   };
 
   // Handle API key update
-  const handleApiKeyUpdate = async (providerName) => {
-    const apiKey = apiKeyInputs[providerName];
-    if (!apiKey) {
-      setError(`Please enter an API key for ${providerName}`);
-      return;
-    }
-
-    try {
-      setError(null);
-      setSuccessMessage(null);
-      const response = await fetch(`${config.apiBaseUrl}/amazon/scraping-provider-key`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scrapingProvider: providerName, apiKey })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setSuccessMessage(data.message);
-        setProviders(prev => prev.map(p =>
-          p.name === providerName ? { ...p, hasApiKey: true, apiKey: `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` } : p
-        ));
-      } else {
-        setError(data.error || 'Failed to update API key');
-      }
-    } catch (err) {
-      setError('Failed to update API key');
-      console.error('Update API key error:', err);
-    }
-  };
 
   // Clear messages after 5 seconds
   useEffect(() => {
-    if (error || successMessage) {
+    if (error) {
       const timer = setTimeout(() => {
         setError(null);
-        setSuccessMessage(null);
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [error, successMessage]);
+  }, [scrapingProvidersRequest.error]);
 
   if (!isOpen) return null;
 
@@ -202,12 +141,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
             {error}
           </div>
         )}
-        {successMessage && (
-          <div className="bg-green-500 text-white p-2 rounded-md mb-4">
-            {successMessage}
-          </div>
-        )}
-        {loading ? (
+        {scrapingProvidersRequest.loading ? (
           <div className="text-white text-center">Loading providers...</div>
         ) : (
           <div className="overflow-x-auto">
@@ -215,53 +149,19 @@ const SettingsModal = ({ isOpen, onClose }) => {
               <thead>
                 <tr>
                   <th className="border-b border-gray-200 p-4 text-left text-white">Name</th>
-                  <th className="border-b border-gray-200 p-4 text-left text-white">API Key</th>
-                  <th className="border-b border-gray-200 p-4 text-left text-white">Actions</th>
+                  <th className="border-b border-gray-200 p-4 text-left text-white">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {providers.length ? (
-                  providers.map((provider, index) => (
+                  providers.map((provider) => (
                     <tr
                       key={provider.name}
-                      className={index === currentScrapingProvider ? "bg-indigo-500" : "hover:bg-indigo-800 hover:cursor-pointer"}
-                      onClick={() => handleSelectProvider(provider.name, index)}
+                      className={provider.name === currentScrapingProviderName ? "bg-indigo-500" : "hover:bg-indigo-800 hover:cursor-pointer"}
+                      onClick={provider.name === currentScrapingProviderName ? null : () => handleSelectProvider(provider.name)}
                     >
                       <td className="border-b border-gray-200 p-4 text-white">{provider.name}</td>
-                      <td className="border-b border-gray-200 p-4">
-                        { provider.name != "MockAmazon" && (
-                          <input
-                            className="border border-white p-2 rounded-sm bg-gray-700 text-white w-full"
-                            type="text"
-                            placeholder="Enter API Key"
-                            value={apiKeyInputs[provider.name] || ''}
-                            onChange={(e) => handleApiKeyChange(provider.name, e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          />)
-                        }
-                      </td>
-                      <td className="border-b border-gray-200 p-4 text-white">
-                        {provider.status && !provider.status.error
-                          ? `${provider.status.currentConcurrency || 0} / ${provider.status.maxConcurrency || 'N/A'}`
-                          : 'N/A'}
-                      </td>
-                      <td className="border-b border-gray-200 p-4 text-white">
-                        {provider.status && !provider.status.error
-                          ? ((provider.status.maxApiCredit || 0) - (provider.status.usedApiCredit || 0)).toLocaleString()
-                          : 'N/A'}
-                      </td>
-                      <td className="border-b border-gray-200 p-4">
-                        <button
-                          className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded-md disabled:bg-gray-500"
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent row click
-                            handleApiKeyUpdate(provider.name);
-                          }}
-                          disabled={apiKeyInputs[provider.name] === provider.apiKey || !apiKeyInputs[provider.name]}
-                        >
-                          Update
-                        </button>
-                      </td>
+                      <td className="border-b border-gray-200 p-4 text-white">{ provider.hasApiKey ? "Has API Key" : "No Key" }</td>
                     </tr>
                   ))
                 ) : (
