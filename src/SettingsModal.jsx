@@ -57,7 +57,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    setProviders(response.providerList);
+    setProviders(response.availableScrapingProviders);
     setCurrentScrapingProviderName(response.currentScrapingProviderName);
   };
 
@@ -79,36 +79,29 @@ const SettingsModal = ({ isOpen, onClose }) => {
       body: JSON.stringify({ providerName }),
     });
     
-    if (response.ok) {
-      
-    } else {
+    if (!response.ok) {
       const error = await response.json();
-      console.log(error);
       switch (error.message) {
         case "No API Key":
           const apiKey = prompt(`Enter ${providerName}'s API key.`);
           if (!apiKey) {
             alert("No API key was provided.");
-            return;
+            break;
           }
 
           await scrapingProviderKeyRequest.request(`${config.apiBaseUrl}/amazon/scraping-provider-key`, { method: "POST" }, { apiKey, providerName });
           if (scrapingProviderKeyRequest.error) {
             alert(`Failed to update scraping provider API key: ${scrapingProviderKeyRequest.error}`);
-            return;
+            break;
           }
-
-          fetchProviders();
-          return;
+          break;
         case "Failed to check status of scraping provider":
           alert("Failed to check status of scraping provider. Please, try again later.");
-          return;
-        
-        default:
-          console.log("Successfully selected scraping provider.");
-          return;
+          break;
       }
     }
+
+    fetchProviders();
   };
 
   // Handle API key update

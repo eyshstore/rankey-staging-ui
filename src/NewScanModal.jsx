@@ -23,7 +23,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     domain: 'com',
     ASINs: [],
     maxConcurrentProductRequests: 1,
-    numberOfProductsToGather: 10000,
+    numberOfProductsToCheck: 10000,
     maxCategoriesConcurrentRequests: 1,
     strategy: 'breadth-first-left',
     pagesSkip: 5,
@@ -187,7 +187,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
       }
       scanData.ASINs = formData.ASINs;
     } else if (scanType === 'Category') {
-      if (Number(formData.numberOfProductsToGather) < 24) {
+      if (Number(formData.numberOfProductsToCheck) < 24) {
         alert('Number of products to gather must be at least 24 for Category scans.');
         return;
       }
@@ -195,14 +195,14 @@ const NewScanModal = ({ isOpen, onClose }) => {
       scanData.maxCategoriesConcurrentRequests = Number(formData.maxCategoriesConcurrentRequests);
       scanData.strategy = formData.strategy;
       scanData.pagesSkip = Number(formData.pagesSkip);
-      scanData.numberOfProductsToGather = Number(formData.numberOfProductsToGather);
+      scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
     } else if (scanType === 'Deals') {
-      if (Number(formData.numberOfProductsToGather) < 24) {
+      if (Number(formData.numberOfProductsToCheck) < 24) {
         alert('Number of products to gather must be at least 24 for Deals scans.');
         return;
       }
       scanData.categoryId = formData.category?._id;
-      scanData.numberOfProductsToGather = Number(formData.numberOfProductsToGather);
+      scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
     }
 
     const result = await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, { method: 'POST' }, scanData);
@@ -439,8 +439,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
         />
         <NumberInput
           label="Number of products to gather"
-          name="numberOfProductsToGather"
-          value={formData.numberOfProductsToGather}
+          name="numberOfProductsToCheck"
+          value={formData.numberOfProductsToCheck}
           onChange={handleInputChange}
           min="24"
         />
@@ -455,8 +455,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
       <CategoryAndDealsForm>
         <NumberInput
           label="Number of products to gather"
-          name="numberOfProductsToGather"
-          value={formData.numberOfProductsToGather}
+          name="numberOfProductsToCheck"
+          value={formData.numberOfProductsToCheck}
           onChange={handleInputChange}
           min="24"
         />
