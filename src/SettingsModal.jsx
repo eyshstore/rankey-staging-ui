@@ -22,7 +22,7 @@ import useRequest from "../hooks/useRequest.hook";
     }
 
     try {
-      const status = await scrapingProvider.getStatus();
+      // const status = await scrapingProvider.updateStatus(); -> getStatus
 
       if (!status) {
         // 403 Error
