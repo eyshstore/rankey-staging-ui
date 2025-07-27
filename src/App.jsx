@@ -1,3 +1,4 @@
+// App.jsx
 import { useState, useEffect } from 'react';
 
 import LoginPage from './LoginPage';
@@ -8,32 +9,34 @@ import config from './config';
 import useRequest from '../hooks/useRequest.hook';
 
 function App() {
-  const loginRequest = useRequest();
+  const authRequest = useRequest();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await loginRequest.request(`${config.apiBaseUrl}/auth/check`);
-        if (response.isAuthenticated) {
-          setIsLoggedIn(true);
-        }
+        await authRequest.request(`${config.apiBaseUrl}/auth/check`);
+        setIsLoggedIn(true);
       } catch (error) {
-        console.error('Auth check failed: ', error);
+
       }
+
+      setCheckingAuth(false);
     };
+
     checkAuth();
   }, []);
 
-  if (loginRequest.loading) {
+  if (authRequest.loading || checkingAuth) {
     return <div className="w-full h-full flex items-center justify-center text-white">Loading...</div>;
   }
 
-  if (isLoggedIn) {
-    return <Dashboard setIsLoggedIn={setIsLoggedIn} />;
-  }
-
-  return <LoginPage setIsLoggedIn={setIsLoggedIn} />;
+  return isLoggedIn ? (
+    <Dashboard setIsLoggedIn={setIsLoggedIn} />
+  ) : (
+    <LoginPage setIsLoggedIn={setIsLoggedIn} />
+  );
 }
 
 export default App;

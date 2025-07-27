@@ -1,60 +1,44 @@
 import { useState, useCallback } from 'react';
 
 const useRequest = () => {
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [controller, setController] = useState(null);
+  const [error, setError] = useState(null);
 
-  const request = async (url, options = {}, body = {}) => {
+  const request = useCallback(async (url, method = 'GET', body = null, headers = {}) => {
     setLoading(true);
     setError(null);
 
-    const newController = new AbortController();
-    setController(newController);
-
     try {
-      const requestConfig = {
-        method: "GET",
-        ...options,
-        signal: newController.signal,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+      let options = {
+        method,
+        credentials: "include",
+        headers: { ...headers }
       };
 
-      if (requestConfig.method == "POST") {
-        requestConfig.body = JSON.stringify(body);
+      if (body) {
+        options.body = JSON.stringify(body);
+        options.headers['Content-Type'] = 'application/json';
       }
 
-      const response = await fetch(url, requestConfig);
+      const response = await fetch(url, options);
+      const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = await response.json();
-        setError(errorMessage);
-        return { error: errorMessage.error };
+        setError(data);
+        throw new Error(data.message || "Something went wrong.");
       }
 
-      const result = await response.json();
-      return result;
+      return data;
     } catch (error) {
-      setError(error);
-      return { error };
+      throw error;
     } finally {
       setLoading(false);
-      setController(null);
     }
-  };
+  }, []);
 
-  const cancel = useCallback(() => {
-    if (controller) {
-      controller.abort();
-      setController(null);
-    }
-  }, [controller]);
+  const clearError = useCallback(() => setError(null), []);
 
-  return { error, loading, request, cancel };
+  return { loading, request, error, clearError };
 };
 
 export default useRequest;

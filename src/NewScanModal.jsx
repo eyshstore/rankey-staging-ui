@@ -7,7 +7,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const mainCategoriesRequest = useRequest();
   const submitRequest = useRequest();
 
-  const [scrapingHasStatusEndpoint, setScrapingHasStatusEndpoint] = useState(false);
   const [scanType, setScanType] = useState('ASIN');
   const [currentPage, setCurrentPage] = useState(1);
   const [newAsin, setNewAsin] = useState('');
@@ -55,10 +54,10 @@ const NewScanModal = ({ isOpen, onClose }) => {
   // API Calls
   const fetchCategories = async () => {
     if (!categories[formData.domain]?.length) {
-      const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
-      if (response.mainCategories?.length) {
-        setCategories((prev) => ({ ...prev, [formData.domain]: response.mainCategories }));
-        setFormData((prev) => ({ ...prev, category: response.mainCategories[0] }));
+      const data = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
+      if (data.mainCategories?.length) {
+        setCategories((prev) => ({ ...prev, [formData.domain]: data.mainCategories }));
+        setFormData((prev) => ({ ...prev, category: data.mainCategories[0] }));
       }
     }
   };
@@ -205,10 +204,14 @@ const NewScanModal = ({ isOpen, onClose }) => {
       scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
     }
 
-    const result = await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, { method: 'POST' }, scanData);
-    if (!result.error) {
-      onClose();
-      setFormData((prev) => ({ ...prev, ASINs: [] }));
+    try {
+      const data = await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, 'POST', scanData);
+      if (!data.error) {
+        onClose();
+        setFormData((prev) => ({ ...prev, ASINs: [] }));
+      }
+    } catch (error) {
+      
     }
   };
 
@@ -530,7 +533,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
             Start Scan
           </button>
           {submitRequest.error && (
-            <p className="bg-red-500 rounded p-2 text-white">{submitRequest.error.error}</p>
+            <p className="bg-red-500 rounded p-2 text-white">{submitRequest.error}</p>
           )}
         </form>
       </div>

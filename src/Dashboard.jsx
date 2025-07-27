@@ -14,22 +14,18 @@ import useRequest from '../hooks/useRequest.hook';
 const Dashboard = ({ setIsLoggedIn }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [currentSection, setCurrentSection] = useState('');
-  
   const [currentDomain, setCurrentDomain] = useState('');
-  
   const [currentScanId, setCurrentScanId] = useState('');
-
   const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
+
+  const logoutRequest = useRequest();
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${config.apiBaseUrl}/auth/logout`, { method: 'POST', credentials: 'include' });
-      const data = await response.json();
-      if (data.message === 'Logged out successfully') {
-        setIsLoggedIn(false);
-      }
+      await logoutRequest.request(`${config.apiBaseUrl}/auth/logout`, 'POST');
+      setIsLoggedIn(false);
     } catch (error) {
-      console.error('Logout failed: ', error);
+      console.error('Logout failed: ', logoutRequest.error);
     }
   };
 
