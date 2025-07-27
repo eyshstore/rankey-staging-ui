@@ -25,7 +25,9 @@ const useRequest = () => {
 
       if (!response.ok) {
         setError(data);
-        throw new Error(data.message || "Something went wrong.");
+        const error = new Error(data.message || "Something went wrong.");
+        error.code = data.code;
+        throw error;
       }
 
       return data;

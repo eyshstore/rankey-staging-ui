@@ -8,8 +8,6 @@ const SettingsModal = ({ isOpen, onClose }) => {
   const [error, setError] = useState(null);
 
   const scrapingProvidersRequest = useRequest();
-  const scrapingProviderKeyRequest = useRequest();
-  const selectProviderRequest = useRequest();
 
   const fetchProviders = async () => {
     try {
@@ -17,7 +15,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
       setAvailableScrapingProviders(data.availableScrapingProviders);
       setCurrentScrapingProviderName(data.currentScrapingProviderName);
     } catch (error) {
-      setError(scrapingProvidersRequest.error);
+      
     }
   };
 
@@ -28,33 +26,34 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
   const handleSelectProvider = async (providerName) => {
     try {
-      await selectProviderRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/select`, 'POST', { providerName });
+      await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/select`, 'POST', { providerName });
+      fetchProviders();
     } catch (error) {
-      console.log(JSON.stringify(error, null, 2));
-      const code = error.code || null;
+      const code = error.code;
       if (code === "NO_API_KEY") {
         const apiKey = prompt(`Enter ${providerName}'s API key.`);
         if (!apiKey) {
-          alert("No API key was provided.");
+          setError("No API key was provided.");
+          return;
+        }
+  
+        try {
+          await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/key`, 'POST', { apiKey, providerName });
+        } catch (e) {
+          setError(`Failed to update API key: ${e.message}`);
           return;
         }
 
-        try {
-          await scrapingProviderKeyRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/key`, 'POST', { apiKey, providerName });
-        } catch (e) {
-          alert(`Failed to update API key: ${scrapingProviderKeyRequest.error}`);
-          return;
-        }
+        await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/select`, 'POST', { providerName });
+        fetchProviders();
       } else if (code === "SCRAPING_PROVIDER_ERROR") {
-        alert("Provider error. Try again later.");
+        setError("Provider error. Try again later.");
         return;
       } else {
-        alert(`Failed to select provider: ${selectProviderRequest.error}`);
+        setError(`Failed to select provider: ${error.message}`);
         return;
       }
     }
-
-    fetchProviders();
   };
 
   useEffect(() => {
