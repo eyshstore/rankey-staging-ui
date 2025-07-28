@@ -42,7 +42,7 @@ const ScanDetails = ({ currentScanId }) => {
   // Handle downloading products as Excel
   const handleProductsDownload = async () => {
     try {
-      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/${currentScanId}/products`);
+      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScanId}/products`);
       if (!response || !response.products) {
         console.error('No products found in response');
         return;

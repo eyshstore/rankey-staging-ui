@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+
 import config from './config';
+
 import useRequest from "../hooks/useRequest.hook";
 
 const SettingsModal = ({ isOpen, onClose }) => {
@@ -39,19 +41,19 @@ const SettingsModal = ({ isOpen, onClose }) => {
   
         try {
           await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/key`, 'POST', { apiKey, providerName });
-        } catch (e) {
-          setError(`Failed to update API key: ${e.message}`);
+        } catch (error) {
+          setError(`Failed to update API key: ${error.message}`);
           return;
         }
 
-        await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/select`, 'POST', { providerName });
-        fetchProviders();
-      } else if (code === "SCRAPING_PROVIDER_ERROR") {
-        setError("Provider error. Try again later.");
-        return;
+        try {
+          await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/select`, 'POST', { providerName });
+          fetchProviders();
+        } catch (error) {
+          setError(error);
+        }
       } else {
-        setError(`Failed to select provider: ${error.message}`);
-        return;
+        setError(error);
       }
     }
   };
@@ -81,7 +83,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
         {error && (
           <div className="bg-red-500 text-white p-2 rounded-md mb-4">
-            {error}
+            {error.message}
           </div>
         )}
 

@@ -6,10 +6,12 @@ import * as XLSX from 'xlsx';
 const NewScanModal = ({ isOpen, onClose }) => {
   const mainCategoriesRequest = useRequest();
   const submitRequest = useRequest();
+  const scrapingProviderStatusApiEndpointRequest = useRequest();
 
   const [scanType, setScanType] = useState('ASIN');
   const [currentPage, setCurrentPage] = useState(1);
   const [newAsin, setNewAsin] = useState('');
+  const [scrapingProviderHasConcurrencyInfo, setScrapingProviderHasConcurrencyInfo] = useState(false);
   const itemsPerPage = 10;
 
   // Utility Functions
@@ -62,10 +64,20 @@ const NewScanModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const checkScrapingProviderStatusApiEndpoint = async () => {
+    try {
+      const data = await scrapingProviderStatusApiEndpointRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/concurrency`);
+      setScrapingProviderHasConcurrencyInfo(data.currentScrapingProviderHasConcurrencyInfo);
+    } catch (error) {
+
+    }
+  };
+
   // Effects
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
+      checkScrapingProviderStatusApiEndpoint();
     }
   }, [isOpen, formData.domain]);
 
@@ -79,7 +91,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
   // Handlers
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name === 'minRank' && Number(value) > formData.maxRank) return;
     if (name === 'maxRank' && Number(value) < formData.minRank) return;
 
@@ -205,13 +217,11 @@ const NewScanModal = ({ isOpen, onClose }) => {
     }
 
     try {
-      const data = await submitRequest.request(`${config.apiBaseUrl}/amazon/start-scan`, 'POST', scanData);
-      if (!data.error) {
-        onClose();
-        setFormData((prev) => ({ ...prev, ASINs: [] }));
-      }
+      await submitRequest.request(`${config.apiBaseUrl}/amazon/scans/enqueue`, 'POST', { config: scanData });
+      onClose();
+      setFormData((prev) => ({ ...prev, ASINs: [] }));
     } catch (error) {
-      
+
     }
   };
 
@@ -280,47 +290,47 @@ const NewScanModal = ({ isOpen, onClose }) => {
           options={categories[formData.domain].map((cat) => ({ value: cat._id, label: cat.name }))}
         />
         <div className="space-y-2">
-        <CheckboxInput
-          label="Enable Product Expiration Check"
-          name="useProductExpiration"
-          checked={formData.useProductExpiration}
-          onChange={handleInputChange}
-        />
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-200">Product Expiration</label>
-          <input
-            type="datetime-local"
-            name="productExpiration"
-            value={formData.productExpiration}
+          <CheckboxInput
+            label="Enable Product Expiration Check"
+            name="useProductExpiration"
+            checked={formData.useProductExpiration}
             onChange={handleInputChange}
-            disabled={!formData.useProductExpiration}
-            className={`w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500 ${!formData.useProductExpiration ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
-        </div>
-      </div>
-      </div>
-      <div>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <NumberInput
-                label="Min Rank"
-                name="minRank"
-                value={formData.minRank}
-                onChange={handleInputChange}
-                min="1"
-              />
-            </div>
-            <div className="flex-1">
-              <NumberInput
-                label="Max Rank"
-                name="maxRank"
-                value={formData.maxRank}
-                onChange={handleInputChange}
-                min="1"
-              />
-            </div>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-200">Product Expiration</label>
+            <input
+              type="datetime-local"
+              name="productExpiration"
+              value={formData.productExpiration}
+              onChange={handleInputChange}
+              disabled={!formData.useProductExpiration}
+              className={`w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500 ${!formData.useProductExpiration ? 'opacity-50 cursor-not-allowed' : ''}`}
+            />
           </div>
         </div>
+      </div>
+      <div>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <NumberInput
+              label="Min Rank"
+              name="minRank"
+              value={formData.minRank}
+              onChange={handleInputChange}
+              min="1"
+            />
+          </div>
+          <div className="flex-1">
+            <NumberInput
+              label="Max Rank"
+              name="maxRank"
+              value={formData.maxRank}
+              onChange={handleInputChange}
+              min="1"
+            />
+          </div>
+        </div>
+      </div>
       {children}
     </div>
   );
@@ -494,34 +504,46 @@ const NewScanModal = ({ isOpen, onClose }) => {
           </button>
         </div>
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <SelectInput
-            label="Type"
-            name="scanType"
-            value={scanType}
-            onChange={(e) => setScanType(e.target.value)}
-            options={[
-              { value: 'ASIN', label: 'ASIN' },
-              { value: 'Category', label: 'Category' },
-              { value: 'Deals', label: 'Deals' },
-            ]}
-          />
-          <SelectInput
-            label="Domain"
-            name="domain"
-            value={formData.domain}
-            onChange={handleInputChange}
-            options={domains}
-          />
+          {/* First select */}
+          <div>
+            <SelectInput
+              label="Type"
+              name="scanType"
+              value={scanType}
+              onChange={(e) => setScanType(e.target.value)}
+              options={[
+                { value: 'ASIN', label: 'ASIN' },
+                { value: 'Category', label: 'Category' },
+                { value: 'Deals', label: 'Deals' },
+              ]}
+            />
+          </div>
+
+          {/* Second select */}
+          <div>
+            <SelectInput
+              label="Domain"
+              name="domain"
+              value={formData.domain}
+              onChange={handleInputChange}
+              options={domains}
+            />
+          </div>
+
+          {/* Full-width NumberInput on next row */}
+          {!scrapingProviderHasConcurrencyInfo && (
+            <div className="col-span-2">
+              <NumberInput
+                label="Max Concurrent Product Requests"
+                name="maxConcurrentProductRequests"
+                value={formData.maxConcurrentProductRequests}
+                onChange={handleInputChange}
+                min="1"
+              />
+            </div>
+          )}
         </div>
-        <div className="mb-4">
-          <NumberInput
-            label="Max Products Concurrent Requests"
-            name="maxConcurrentProductRequests"
-            value={formData.maxConcurrentProductRequests}
-            onChange={handleInputChange}
-            min="1"
-          />
-        </div>
+
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4">
           {scanType === 'ASIN' && <ASINForm />}
           {scanType === 'Category' && <CategoryForm />}
