@@ -70,7 +70,6 @@ const ScanDetails = ({ currentScanId }) => {
       ];
 
       // Map products to ensure all fields are included
-      console.log(JSON.stringify(response.products, null, 2));
       const data = response.products.map(product => {
         const row = {};
         fields.forEach(field => {
