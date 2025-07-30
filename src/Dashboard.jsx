@@ -13,9 +13,13 @@ import useRequest from '../hooks/useRequest.hook';
 
 const Dashboard = ({ setIsLoggedIn }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
   const [currentSection, setCurrentSection] = useState('');
   const [currentDomain, setCurrentDomain] = useState('');
-  const [currentScanId, setCurrentScanId] = useState('');
+
+  const [scans, setScans] = useState([]);
+  const [currentScan, setCurrentScan] = useState('');
+
   const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
 
   const logoutRequest = useRequest();
@@ -38,8 +42,8 @@ const Dashboard = ({ setIsLoggedIn }) => {
     section = <DomainsList currentDomain={currentDomain} setCurrentDomain={setCurrentDomain} />;
     details = currentDomain && <DomainCategoriesDetails currentDomain={currentDomain} />;
   } else if (currentSection === "productScans") {
-    section = <ScansList currentScanId={currentScanId} setCurrentScanId={setCurrentScanId} />;
-    details = currentScanId && <ScanDetails currentScanId={currentScanId} />;
+    section = <ScansList scans={scans} setScans={setScans} currentScan={currentScan} setCurrentScan={setCurrentScan} />;
+    details = currentScan && <ScanDetails currentScan={currentScan} />;
   }
 
   return (

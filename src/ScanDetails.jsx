@@ -1,48 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+
 import useRequest from '../hooks/useRequest.hook';
 import config from './config';
 
-const ScanDetails = ({ currentScanId }) => {
-  const [scanId, setScanId] = useState("");
+const ScanDetails = ({ currentScan }) => {
   const scanDetailsRequest = useRequest();
+  const [dbInfo, setDbInfo] = useState(null);
+  const [realTimeInfo, setRealTimeInfo] = useState(null);
 
-  /*
-  const fetchScanDetails = async () => {
+  // Fetch scan details when currentScan changes
+  const fetchData = async () => {
+    if (!currentScan?._id) return;
+
     try {
-      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scan-details`);
-      if (response && response.scan && response.scan._id) {
-        setScanId(response.scan._id);
-      } else {
-        console.error('No scan ID found in response');
-      }
+      setDbInfo(null); // Reset to avoid showing stale data
+      setRealTimeInfo(null);
+      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScan._id}/details`);
+      setDbInfo(response.dbInfo);
+      setRealTimeInfo(response.realTimeInfo);
     } catch (error) {
-      console.error('Error fetching scan details:', error);
+      console.error(`ScanDetails error: ${error}`);
     }
   };
 
-  
   useEffect(() => {
-    fetchScanDetails();
+    fetchData();
 
-    if (currentScanId && currentScanId === scanId) {
-      const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scan-details/events`, { withCredentials: true });
-      eventSource.onmessage = (event) => {
-        console.log(`Scan Event: ${JSON.stringify(JSON.parse(event.data), null, 2)}`);
-      };
-      eventSource.onerror = () => {
-        console.error('SSE error occurred');
-        eventSource.close();
-      };
-      return () => eventSource.close();
-    }
-  }, [currentScanId, scanId]);
-  */
+    // Establish EventSource for real-time updates
+    if (!currentScan?._id) return;
 
-  // Handle downloading products as Excel
+    const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scan-details/events`, { withCredentials: true });
+    eventSource.onmessage = (event) => {
+      const { scanId, dbInfo, realTimeInfo } = JSON.parse(event.data);
+      if (currentScan._id === scanId) {
+        // setRealTimeInfo(realTimeInfo);
+        console.log(realTimeInfo);
+      }
+    };
+    eventSource.onerror = () => {
+      console.error('EventSource error');
+      eventSource.close();
+    };
+
+    return () => eventSource.close();
+  }, [currentScan?._id]); // Depend on currentScan._id to refetch on change
+
   const handleProductsDownload = async () => {
     try {
-      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScanId}/products`);
+      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScan._id}/products`);
       if (!response || !response.products) {
         console.error('No products found in response');
         return;
@@ -66,10 +72,10 @@ const ScanDetails = ({ currentScanId }) => {
         'ratingStars',
         'purchaseInfo',
         'changedInThisScan',
-        'changedFields'
+        'changedFields',
+        'status',
       ];
 
-      // Map products to ensure all fields are included
       const data = response.products.map(product => {
         const row = {};
         fields.forEach(field => {
@@ -78,21 +84,17 @@ const ScanDetails = ({ currentScanId }) => {
         return row;
       });
 
-      // Create Excel worksheet and workbook
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
-
-      // Set column headers
       XLSX.utils.sheet_add_aoa(worksheet, [fields], { origin: 'A1' });
 
-      // Generate and download Excel file
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `scan_${currentScanId}_products.xlsx`;
+      link.download = `scan_${currentScan._id}_products.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -102,18 +104,55 @@ const ScanDetails = ({ currentScanId }) => {
     }
   };
 
+  if (!currentScan) {
+    return <p className="p-4 text-gray-500">No scan selected</p>;
+  }
+
+  if (scanDetailsRequest.loading) {
+    return <p className="p-4 text-gray-500">Loading...</p>;
+  }
+
+  let detailsDisplay;
+  switch (currentScan.type) {
+    case 'ASIN':
+      detailsDisplay = (
+        <div>
+          {dbInfo && (
+            <>
+              <p><strong>Products Gathered:</strong> {dbInfo.productsCount} / {dbInfo.numberOfProductsToCheck}</p>
+              {
+                typeof realTimeInfo === 'string' ? realTimeInfo : 
+                  ASINsRequests.map((ASIN, i) => <p>{ `${i + 1}. ${ASIN}` }</p>)
+              }
+            </>
+          )}
+        </div>
+      );
+      break;
+    case 'Category':
+      break;
+    case 'Deals':
+      break;
+    default:
+      detailsDisplay = <p>Unknown scan type</p>;
+  }
+
   return (
-    <div className="bg-gray-800 p-4 rounded">
-      {scanDetailsRequest.loading && <p>Loading...</p>}
-      {scanDetailsRequest.error && <p className="text-red-500">Error: {scanDetailsRequest.error}</p>}
-      <h2 className="text-lg font-bold mb-2">Scan Details</h2>
-      <button
-        onClick={handleProductsDownload}
-        className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        disabled={scanDetailsRequest.loading || !currentScanId}
-      >
-        Download Products
-      </button>
+    <div>
+      <div className="bg-gray-800 p-4 rounded">
+        {scanDetailsRequest.error && <p className="text-red-500">Error: {scanDetailsRequest.error}</p>}
+        <h2 className="text-lg font-bold mb-2">Scan {currentScan._id}</h2>
+      </div>
+      <div className="flex-1 flex-col p-4">
+        <button
+          onClick={handleProductsDownload}
+          className="mb-4 cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
+          disabled={scanDetailsRequest.loading || !currentScan._id}
+        >
+          Download Products
+        </button>
+        {detailsDisplay}
+      </div>
     </div>
   );
 };

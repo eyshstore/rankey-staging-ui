@@ -28,8 +28,7 @@ const ResumeIcon = () => {
   );
 };
 
-const ScansList = ({ currentScanId, setCurrentScanId }) => {
-  const [scans, setScans] = useState([]);
+const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
   const scansRequest = useRequest();
 
   const fetchScans = async () => {
@@ -39,6 +38,9 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
 
   const handleScanDelete = async (scanId) => {
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?scanId=${scanId}`, "DELETE");
+    if (scanId === currentScan.id) {
+      currentScan = {};
+    }
   };
 
   const handleScanHalt = async () => {
@@ -74,7 +76,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
           stateControls = (
             <button
               onClick={() => handleScanDelete(entry._id)}
-              className="hover:cursor bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
+              className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
               title="Delete Scan"
             >
               <DeleteIcon />
@@ -86,7 +88,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
             <div className="flex flex-col space-y-2">
               <button
                 onClick={(e) => handleScanHalt()}
-                className="hover:cursor bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
+                className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Stop Scan"
               >
                 <HaltIcon />
@@ -99,14 +101,14 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
             <div className="flex gap-2">
               <button
                 onClick={(e) => handleScanResume()}
-                className="hover:cursor bg-green-600 hover:bg-green-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
+                className="hover:cursor-pointer bg-green-600 hover:bg-green-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Resume Scan"
               >
                 <ResumeIcon />
               </button>
               <button
                 onClick={(e) => handleScanHalt()}
-                className="hover:cursor bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
+                className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Stop Scan"
               >
                 <HaltIcon />
@@ -118,7 +120,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
           stateControls = (
             <button
               onClick={() => handleScanDelete(entry._id)}
-              className="hover:cursor bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
+              className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
               title="Delete Scan"
             >
               <DeleteIcon />
@@ -137,16 +139,6 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
           );
       }
 
-      const formatDate = (date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-
-        return `${year}.${month}.${day} ${hours}:${minutes}`;
-      };
-
       const capitalize = string => {
         if (!string) return string;
         return string.charAt(0).toUpperCase() + string.slice(1);
@@ -155,7 +147,7 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
       let styleClass;
       if (entry.state === "active") {
         styleClass = activeScanStyle;
-      } else if (currentScanId === entry._id) {
+      } else if (currentScan._id === entry._id) {
         styleClass = selectedScanStyle;
       } else {
         styleClass = scanStyle;
@@ -163,11 +155,11 @@ const ScansList = ({ currentScanId, setCurrentScanId }) => {
 
       return (
         <tr
-          onClick={() => setCurrentScanId(entry._id)}
+          onClick={() => setCurrentScan(entry)}
           key={entry._id}
           className={styleClass}
         >
-          <td className="p-4">{ "..." + entry._id.slice(-4) }</td>
+          <td className="p-4">{ "..." + entry._id.slice(-8) }</td>
           <td className="p-4">{entry.type}</td>
           <td className="p-4">{capitalize(entry.state)}</td>
           <td className="p-4">{entry.domain}</td>
