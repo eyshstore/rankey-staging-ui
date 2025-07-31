@@ -6,19 +6,17 @@ import config from './config';
 
 const ScanDetails = ({ currentScan }) => {
   const scanDetailsRequest = useRequest();
-  const [dbInfo, setDbInfo] = useState(null);
-  const [realTimeInfo, setRealTimeInfo] = useState(null);
+  const [scanDetails, setScanDetails] = useState(null);
 
   // Fetch scan details when currentScan changes
   const fetchData = async () => {
     if (!currentScan?._id) return;
+    console.log(`Fetching data for: ${currentScan._id}`);
 
     try {
-      setDbInfo(null); // Reset to avoid showing stale data
-      setRealTimeInfo(null);
+      setScanDetails(null);
       const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScan._id}/details`);
-      setDbInfo(response.dbInfo);
-      setRealTimeInfo(response.realTimeInfo);
+      setScanDetails(response.details);
     } catch (error) {
       console.error(`ScanDetails error: ${error}`);
     }
@@ -32,10 +30,9 @@ const ScanDetails = ({ currentScan }) => {
 
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scan-details/events`, { withCredentials: true });
     eventSource.onmessage = (event) => {
-      const { scanId, dbInfo, realTimeInfo } = JSON.parse(event.data);
+      const { scanId, details } = JSON.parse(event.data);
       if (currentScan._id === scanId) {
-        // setRealTimeInfo(realTimeInfo);
-        console.log(realTimeInfo);
+        setScanDetails(details);
       }
     };
     eventSource.onerror = () => {
@@ -113,28 +110,33 @@ const ScanDetails = ({ currentScan }) => {
   }
 
   let detailsDisplay;
-  switch (currentScan.type) {
-    case 'ASIN':
-      detailsDisplay = (
-        <div>
-          {dbInfo && (
-            <>
-              <p><strong>Products Gathered:</strong> {dbInfo.productsCount} / {dbInfo.numberOfProductsToCheck}</p>
-              {
-                typeof realTimeInfo === 'string' ? realTimeInfo : 
-                  ASINsRequests.map((ASIN, i) => <p>{ `${i + 1}. ${ASIN}` }</p>)
-              }
-            </>
-          )}
-        </div>
-      );
-      break;
-    case 'Category':
-      break;
-    case 'Deals':
-      break;
-    default:
-      detailsDisplay = <p>Unknown scan type</p>;
+  if (scanDetails) {
+    switch (currentScan.type) {
+      case 'ASIN':
+        detailsDisplay = (
+          <div>
+            {scanDetails && (
+              <>
+                <p><strong>Products Gathered:</strong> {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}</p>
+                <p><strong>Requests sent:</strong> {scanDetails.requestsSent}</p>
+                { scanDetails.ASINsRequests.length > 0 &&
+                  <>
+                  <p>ASIN Requests</p>
+                  { scanDetails.ASINsRequests.map((ASIN, i) => <p key={ASIN}>{`${i + 1}. ${ASIN}`}</p>) }
+                  </>
+                }
+              </>
+            )}
+          </div>
+        );
+        break;
+      case 'Category':
+        break;
+      case 'Deals':
+        break;
+      default:
+        detailsDisplay = <p>Unknown scan type</p>;
+    }
   }
 
   return (
