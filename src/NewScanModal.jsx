@@ -15,24 +15,17 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const itemsPerPage = 10;
 
   // Utility Functions
-  const getFormattedDateTime = (date) => {
-    const pad = (num) => String(num).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  };
-
   const [formData, setFormData] = useState({
     domain: 'com',
     ASINs: [],
     maxConcurrentProductRequests: 1,
     numberOfProductsToCheck: 10000,
-    maxCategoriesConcurrentRequests: 1,
-    strategy: 'breadth-first-left',
+    maxConcurrentCategoryRequests: 1,
+    strategy: 'breadth-first-start',
     pagesSkip: 5,
     scrapeAllSections: false,
     minRank: 1,
     maxRank: 10000,
-    useProductExpiration: false,
-    productExpiration: getFormattedDateTime(new Date()),
     category: null,
   });
 
@@ -47,10 +40,10 @@ const NewScanModal = ({ isOpen, onClose }) => {
   ];
 
   const strategies = [
-    { value: 'breadth-first-left', label: 'Breadth-first left' },
-    { value: 'breadth-first-right', label: 'Breadth-first right' },
-    { value: 'depth-first-left', label: 'Depth-first left' },
-    { value: 'depth-first-right', label: 'Depth-first right' },
+    { value: 'breadth-first-start', label: 'Breadth-first start' },
+    { value: 'breadth-first-end', label: 'Breadth-first end' },
+    { value: 'depth-first-start', label: 'Depth-first start' },
+    { value: 'depth-first-end', label: 'Depth-first end' },
   ];
 
   // API Calls
@@ -187,8 +180,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
       maxConcurrentProductRequests: Number(formData.maxConcurrentProductRequests),
       minRank: Number(formData.minRank),
       maxRank: Number(formData.maxRank),
-      useProductExpiration: formData.useProductExpiration,
-      productExpiration: formData.productExpiration,
     };
 
     if (scanType === 'ASIN') {
@@ -289,25 +280,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
           }
           options={categories[formData.domain].map((cat) => ({ value: cat._id, label: cat.name }))}
         />
-        <div className="space-y-2">
-          <CheckboxInput
-            label="Enable Product Expiration Check"
-            name="useProductExpiration"
-            checked={formData.useProductExpiration}
-            onChange={handleInputChange}
-          />
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-200">Product Expiration</label>
-            <input
-              type="datetime-local"
-              name="productExpiration"
-              value={formData.productExpiration}
-              onChange={handleInputChange}
-              disabled={!formData.useProductExpiration}
-              className={`w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500 ${!formData.useProductExpiration ? 'opacity-50 cursor-not-allowed' : ''}`}
-            />
-          </div>
-        </div>
       </div>
       <div>
         <div className="flex gap-2">
