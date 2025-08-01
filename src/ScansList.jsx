@@ -1,9 +1,8 @@
 import { React, useState, useEffect } from 'react';
-
 import config from './config';
-
 import useRequest from '../hooks/useRequest.hook';
 
+// Icons remain unchanged
 const DeleteIcon = () => {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
@@ -36,19 +35,28 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
     setScans(response.scans);
   };
 
-  const handleScanDelete = async (scanId) => {
+  const handleScanDelete = async (scanId, e) => {
+    e.stopPropagation(); // Prevent the row's onClick from firing
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?scanId=${scanId}`, "DELETE");
-    if (scanId === currentScan.id) {
-      currentScan = {};
+    if (scanId === currentScan._id) {
+      setCurrentScan({}); // Clear currentScan if the deleted scan was selected
     }
+    // Optionally, refetch scans to ensure UI is in sync
+    await fetchScans();
   };
 
-  const handleScanHalt = async () => {
+  const handleScanHalt = async (e) => {
+    e.stopPropagation(); // Prevent the row's onClick from firing
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/halt`, "POST");
+    // Optionally, refetch scans to update the state
+    await fetchScans();
   };
 
-  const handleScanResume = async () => {
+  const handleScanResume = async (e) => {
+    e.stopPropagation(); // Prevent the row's onClick from firing
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/resume`, "POST");
+    // Optionally, refetch scans to update the state
+    await fetchScans();
   };
 
   useEffect(() => {
@@ -57,11 +65,11 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
     // Further updates from server
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scans-list/events`, { withCredentials: true });
     eventSource.onmessage = (event) => {
-      setScans(JSON.parse(event.data))
+      setScans(JSON.parse(event.data));
     };
     eventSource.onerror = () => eventSource.close();
     return () => eventSource.close();
-  }, [])
+  }, []);
 
   const scanStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
   const activeScanStyle = "bg-green-800 border-b border-indigo-200 hover:bg-indigo-800 hover:cursor-pointer";
@@ -75,7 +83,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
         case "enqueued":
           stateControls = (
             <button
-              onClick={() => handleScanDelete(entry._id)}
+              onClick={(e) => handleScanDelete(entry._id, e)}
               className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
               title="Delete Scan"
             >
@@ -87,7 +95,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
           stateControls = (
             <div className="flex flex-col space-y-2">
               <button
-                onClick={(e) => handleScanHalt()}
+                onClick={handleScanHalt}
                 className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Stop Scan"
               >
@@ -100,14 +108,14 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
           stateControls = (
             <div className="flex gap-2">
               <button
-                onClick={(e) => handleScanResume()}
+                onClick={handleScanResume}
                 className="hover:cursor-pointer bg-green-600 hover:bg-green-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Resume Scan"
               >
                 <ResumeIcon />
               </button>
               <button
-                onClick={(e) => handleScanHalt()}
+                onClick={handleScanHalt}
                 className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Stop Scan"
               >
@@ -119,7 +127,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
         case "completed":
           stateControls = (
             <button
-              onClick={() => handleScanDelete(entry._id)}
+              onClick={(e) => handleScanDelete(entry._id, e)}
               className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
               title="Delete Scan"
             >

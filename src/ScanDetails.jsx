@@ -119,12 +119,16 @@ const ScanDetails = ({ currentScan }) => {
               <>
                 <p><strong>Products Gathered:</strong> {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}</p>
                 <p><strong>Requests sent:</strong> {scanDetails.requestsSent}</p>
-                { scanDetails.ASINsRequests.length > 0 &&
-                  <>
-                  <p>ASIN Requests</p>
-                  { scanDetails.ASINsRequests.map((ASIN, i) => <p key={ASIN}>{`${i + 1}. ${ASIN}`}</p>) }
-                  </>
-                }
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                  {scanDetails.ASINsRequests.map((ASIN, i) => (
+                    <div
+                      key={ASIN}
+                      className="bg-gray-100 p-2 rounded shadow text-sm text-gray-800"
+                    >
+                      {`${i + 1}. ${ASIN}`}
+                    </div>
+                  ))}
+                </div>
               </>
             )}
           </div>
