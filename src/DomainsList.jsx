@@ -15,23 +15,27 @@ const DomainsList = ({ currentDomain, setCurrentDomain }) => {
     setDomainsState(response.domainsState);
   };
 
+  const handleStartGathering = async (domain) => {
+    try {
+      await startGatheringRequest.request(`${config.apiBaseUrl}/amazon/gather-categories?domain=${domain}`, 'POST');
+      console.log("Gathering started...");
+    } catch (err) {
+      console.error('Error starting category gathering:', err.message);
+    }
+  };
+
   useEffect(() => {
     fetchDomainsState();
 
     // Further updates from server
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/domain-list/events`, { withCredentials: true });
-    eventSource.onmessage = (event) => setDomainsState(JSON.parse(event.data));
+    eventSource.onmessage = (event) => {
+      console.log(event);
+      setDomainsState(JSON.parse(event.data));
+    };
     eventSource.onerror = (err) => eventSource.close();
     return () => eventSource.close();
   }, []);
-
-  const handleStartGathering = async (domain) => {
-    try {
-      await startGatheringRequest.request(`${config.apiBaseUrl}/amazon/gather-categories?domain=${domain}`, { method: 'POST' });
-    } catch (err) {
-      console.error('Error starting category gathering:', err.message);
-    }
-  };
 
   const categoryStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
   const selectedCategoryStyle = "bg-indigo-400 border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
