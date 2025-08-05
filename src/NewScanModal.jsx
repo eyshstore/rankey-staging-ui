@@ -26,10 +26,10 @@ const NewScanModal = ({ isOpen, onClose }) => {
     scrapeAllSections: false,
     minRank: 1,
     maxRank: 10000,
-    category: null,
+    mainCategory: null,
   });
 
-  const [categories, setCategories] = useState({
+  const [mainCategories, setMainCategories] = useState({
     com: [],
     de: [],
   });
@@ -47,12 +47,12 @@ const NewScanModal = ({ isOpen, onClose }) => {
   ];
 
   // API Calls
-  const fetchCategories = async () => {
-    if (!categories[formData.domain]?.length) {
+  const fetchMainCategories = async () => {
+    if (!mainCategories[formData.domain]?.length) {
       const data = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
       if (data.mainCategories?.length) {
-        setCategories((prev) => ({ ...prev, [formData.domain]: data.mainCategories }));
-        setFormData((prev) => ({ ...prev, category: data.mainCategories[0] }));
+        setMainCategories((prev) => ({ ...prev, [formData.domain]: data.mainCategories }));
+        setFormData((prev) => ({ ...prev, mainCategory: data.mainCategories[0] }));
       }
     }
   };
@@ -69,7 +69,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
   // Effects
   useEffect(() => {
     if (isOpen) {
-      fetchCategories();
+      fetchMainCategories();
       checkScrapingProviderStatusApiEndpoint();
     }
   }, [isOpen, formData.domain]);
@@ -193,7 +193,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
         alert('Number of products to gather must be at least 24 for Category scans.');
         return;
       }
-      scanData.categoryId = formData.category?._id;
+      scanData.category = formData.category;
       scanData.maxCategoriesConcurrentRequests = Number(formData.maxCategoriesConcurrentRequests);
       scanData.strategy = formData.strategy;
       scanData.pagesSkip = Number(formData.pagesSkip);
@@ -203,7 +203,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
         alert('Number of products to gather must be at least 24 for Deals scans.');
         return;
       }
-      scanData.categoryId = formData.category?._id;
+      scanData.category = formData.category;
       scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
     }
 
@@ -269,16 +269,16 @@ const NewScanModal = ({ isOpen, onClose }) => {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <SelectInput
-          label="Category"
-          name="category"
-          value={formData.category?._id}
+          label="Main Category"
+          name="mainCategory"
+          value={formData.mainCategory}
           onChange={(e) =>
             setFormData((prev) => ({
               ...prev,
-              category: categories[formData.domain].find((cat) => cat._id === e.target.value),
+              mainCategory: mainCategories[formData.domain].find((cat) => cat._id === e.target.value),
             }))
           }
-          options={categories[formData.domain].map((cat) => ({ value: cat._id, label: cat.name }))}
+          options={mainCategories[formData.domain].map((cat) => ({ value: cat._id, label: cat.name }))}
         />
       </div>
       <div>
@@ -406,7 +406,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
   };
 
   const CategoryForm = () => (
-    categories[formData.domain].length ? (
+    mainCategories[formData.domain].length ? (
       <CategoryAndDealsForm>
         <SelectInput
           label="Strategy"
@@ -431,12 +431,12 @@ const NewScanModal = ({ isOpen, onClose }) => {
         />
       </CategoryAndDealsForm>
     ) : (
-      <p className="text-red-400">No complete categories are available for this domain. Please gather categories first.</p>
+      <p className="text-red-400">No complete main categories are available for this domain. Please gather categories first.</p>
     )
   );
 
   const DealsForm = () => (
-    categories[formData.domain].length ? (
+    mainCategories[formData.domain].length ? (
       <CategoryAndDealsForm>
         <NumberInput
           label="Number of products to gather"
@@ -447,7 +447,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
         />
       </CategoryAndDealsForm>
     ) : (
-      <p className="text-red-400">No complete categories are available for this domain. Please gather categories first.</p>
+      <p className="text-red-400">No complete main categories are available for this domain. Please gather categories first.</p>
     )
   );
 
