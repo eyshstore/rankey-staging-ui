@@ -86,6 +86,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
               onClick={(e) => handleScanDelete(entry._id, e)}
               className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
               title="Delete Scan"
+              disabled={scansRequest.loading}
             >
               <DeleteIcon />
             </button>
@@ -98,6 +99,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
                 onClick={handleScanHalt}
                 className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Stop Scan"
+                disabled={scansRequest.loading}
               >
                 <HaltIcon />
               </button>
@@ -111,6 +113,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
                 onClick={handleScanResume}
                 className="hover:cursor-pointer bg-green-600 hover:bg-green-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Resume Scan"
+                disabled={scansRequest.loading}
               >
                 <ResumeIcon />
               </button>
@@ -118,6 +121,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
                 onClick={handleScanHalt}
                 className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
                 title="Stop Scan"
+                disabled={scansRequest.loading}
               >
                 <HaltIcon />
               </button>
@@ -130,6 +134,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
               onClick={(e) => handleScanDelete(entry._id, e)}
               className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
               title="Delete Scan"
+              disabled={scansRequest.loading}
             >
               <DeleteIcon />
             </button>

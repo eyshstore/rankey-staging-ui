@@ -19,14 +19,15 @@ const NewScanModal = ({ isOpen, onClose }) => {
     domain: 'com',
     ASINs: [],
     maxConcurrentProductRequests: 1,
-    numberOfProductsToCheck: 10000,
+    numberOfProductsToCheck: 24,
     maxConcurrentCategoryRequests: 1,
     strategy: 'breadth-first-start',
+    usePagesSkip: false,
     pagesSkip: 5,
     scrapeAllSections: false,
     minRank: 1,
     maxRank: 10000,
-    mainCategory: null,
+    mainCategoryId: "",
   });
 
   const [mainCategories, setMainCategories] = useState({
@@ -52,7 +53,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
       const data = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
       if (data.mainCategories?.length) {
         setMainCategories((prev) => ({ ...prev, [formData.domain]: data.mainCategories }));
-        setFormData((prev) => ({ ...prev, mainCategory: data.mainCategories[0] }));
+        setFormData((prev) => ({ ...prev, mainCategoryId: data.mainCategories[0]._id }));
       }
     }
   };
@@ -193,26 +194,28 @@ const NewScanModal = ({ isOpen, onClose }) => {
         alert('Number of products to gather must be at least 24 for Category scans.');
         return;
       }
-      scanData.category = formData.category;
-      scanData.maxCategoriesConcurrentRequests = Number(formData.maxCategoriesConcurrentRequests);
+      scanData.mainCategoryId = formData.mainCategoryId;
+      scanData.maxConcurrentCategoryRequests = Number(formData.maxConcurrentCategoryRequests);
       scanData.strategy = formData.strategy;
-      scanData.pagesSkip = Number(formData.pagesSkip);
+      scanData.usePagesSkip = formData.usePagesSkip;
+      scanData.pagesSkip = formData.pagesSkip;
       scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
     } else if (scanType === 'Deals') {
       if (Number(formData.numberOfProductsToCheck) < 24) {
         alert('Number of products to gather must be at least 24 for Deals scans.');
         return;
       }
-      scanData.category = formData.category;
+      scanData.mainCategoryId = formData.mainCategoryId;
       scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
     }
 
     try {
       await submitRequest.request(`${config.apiBaseUrl}/amazon/scans/enqueue`, 'POST', { config: scanData });
+      console.log("Closing");
       onClose();
       setFormData((prev) => ({ ...prev, ASINs: [] }));
     } catch (error) {
-
+      console.log(error);
     }
   };
 
@@ -267,18 +270,18 @@ const NewScanModal = ({ isOpen, onClose }) => {
 
   const CategoryAndDealsForm = ({ children }) => (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div>
         <SelectInput
           label="Main Category"
-          name="mainCategory"
-          value={formData.mainCategory}
+          name="mainCategoryId"
+          value={formData.mainCategoryId}
           onChange={(e) =>
-            setFormData((prev) => ({
+            setFormData(prev => ({
               ...prev,
-              mainCategory: mainCategories[formData.domain].find((cat) => cat._id === e.target.value),
+              mainCategoryId: mainCategories[formData.domain].find(mainCategory => mainCategory._id === e.target.value)._id,
             }))
           }
-          options={mainCategories[formData.domain].map((cat) => ({ value: cat._id, label: cat.name }))}
+          options={mainCategories[formData.domain].map(mainCategory => ({ value: mainCategory._id, label: mainCategory.name, }))}
         />
       </div>
       <div>
@@ -415,12 +418,19 @@ const NewScanModal = ({ isOpen, onClose }) => {
           onChange={handleInputChange}
           options={strategies}
         />
+        <CheckboxInput
+          label="Use Pages Skipping"
+          name="usePagesSkip"
+          checked={formData.usePagesSkip}
+          onChange={handleInputChange}
+        />
         <NumberInput
           label="Pages Skip"
           name="pagesSkip"
           value={formData.pagesSkip}
           onChange={handleInputChange}
-          min="0"
+          min="1"
+          disabled={!formData.usePagesSkip}
         />
         <NumberInput
           label="Number of products to gather"
@@ -429,6 +439,15 @@ const NewScanModal = ({ isOpen, onClose }) => {
           onChange={handleInputChange}
           min="24"
         />
+        {!scrapingProviderHasConcurrencyInfo &&
+          <NumberInput
+            label="Max Concurrent Category Requests"
+            name="maxConcurrentCategoryRequests"
+            value={formData.maxConcurrentCategoryRequests}
+            onChange={handleInputChange}
+            min="1"
+          />
+        }
       </CategoryAndDealsForm>
     ) : (
       <p className="text-red-400">No complete main categories are available for this domain. Please gather categories first.</p>
@@ -475,6 +494,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
             </svg>
           </button>
         </div>
+        {submitRequest.error && (
+            <p className="bg-red-500 rounded mb-2 p-2 text-white">{submitRequest.error.message}</p>
+          )}
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* First select */}
           <div>
@@ -510,7 +532,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
                 name="maxConcurrentProductRequests"
                 value={formData.maxConcurrentProductRequests}
                 onChange={handleInputChange}
-                min="1"
+                min="0"
               />
             </div>
           )}
@@ -522,13 +544,11 @@ const NewScanModal = ({ isOpen, onClose }) => {
           {scanType === 'Deals' && <DealsForm />}
           <button
             type="submit"
-            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 hover:cursor-pointer transition"
+            disabled={submitRequest.loading}
           >
             Start Scan
           </button>
-          {submitRequest.error && (
-            <p className="bg-red-500 rounded p-2 text-white">{submitRequest.error}</p>
-          )}
         </form>
       </div>
     </div>
