@@ -45,6 +45,12 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
     await fetchScans();
   };
 
+  const handleDeleteAll = async (event) => {
+    event.stopPropagation();
+    await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/all`, "DELETE");
+    await fetchScans();
+  };
+
   const handleScanHalt = async (e) => {
     e.stopPropagation(); // Prevent the row's onClick from firing
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/halt`, "POST");
@@ -172,7 +178,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
           key={entry._id}
           className={styleClass}
         >
-          <td className="p-4">{ "..." + entry._id.slice(-8) }</td>
+          <td className="p-4">{"..." + entry._id.slice(-8)}</td>
           <td className="p-4">{entry.type}</td>
           <td className="p-4">{capitalize(entry.state)}</td>
           <td className="p-4">{entry.domain}</td>
@@ -191,20 +197,28 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
   }
 
   return (
-    <table className="w-full border-collapse">
-      <thead>
-        <tr>
-          <th className="p-4 text-left border-b border-white">Id</th>
-          <th className="p-4 text-left border-b border-white">Type</th>
-          <th className="p-4 text-left border-b border-white">State</th>
-          <th className="p-4 text-left border-b border-white">Domain</th>
-          <th className="p-4 text-left border-b border-white"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {scansDisplay}
-      </tbody>
-    </table>
+    <>
+      <button
+        className="button bg-red-500 hover:bg-red-700 text-white p-2 m-2 rounded-md shrink-0"
+        onClick={handleDeleteAll}
+      >
+        Delete all
+      </button>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className="p-4 text-left border-b border-white">Id</th>
+            <th className="p-4 text-left border-b border-white">Type</th>
+            <th className="p-4 text-left border-b border-white">State</th>
+            <th className="p-4 text-left border-b border-white">Domain</th>
+            <th className="p-4 text-left border-b border-white"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {scansDisplay}
+        </tbody>
+      </table>
+    </>
   );
 };
 

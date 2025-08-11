@@ -123,7 +123,7 @@ const ScanDetails = ({ currentScan }) => {
                   {scanDetails.ASINsRequests.map((ASIN, i) => (
                     <div
                       key={ASIN}
-                      className="bg-gray-100 p-2 rounded shadow text-sm text-gray-800"
+                      className="p-2 rounded shadow text-sm text-gray-800"
                     >
                       {`${i + 1}. ${ASIN}`}
                     </div>

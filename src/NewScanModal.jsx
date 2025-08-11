@@ -190,8 +190,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
       }
       scanData.ASINs = formData.ASINs;
     } else if (scanType === 'Category') {
-      if (Number(formData.numberOfProductsToCheck) < 24) {
-        alert('Number of products to gather must be at least 24 for Category scans.');
+      if (Number(formData.numberOfProductsToCheck) < 12) {
+        alert('Number of products to gather must be at least 12 for Category scans.');
         return;
       }
       scanData.mainCategoryId = formData.mainCategoryId;
@@ -201,8 +201,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
       scanData.pagesSkip = formData.pagesSkip;
       scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
     } else if (scanType === 'Deals') {
-      if (Number(formData.numberOfProductsToCheck) < 24) {
-        alert('Number of products to gather must be at least 24 for Deals scans.');
+      if (Number(formData.numberOfProductsToCheck) < 12) {
+        alert('Number of products to gather must be at least 12 for Deals scans.');
         return;
       }
       scanData.mainCategoryId = formData.mainCategoryId;
@@ -437,7 +437,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
           name="numberOfProductsToCheck"
           value={formData.numberOfProductsToCheck}
           onChange={handleInputChange}
-          min="24"
+          min="12"
         />
         {!scrapingProviderHasConcurrencyInfo &&
           <NumberInput
