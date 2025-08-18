@@ -18,9 +18,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     domain: 'com',
     ASINs: [],
-    maxConcurrentProductRequests: 1,
+    maxConcurrentRequests: 1,
     numberOfProductsToCheck: 24,
-    maxConcurrentCategoryRequests: 1,
     strategy: 'breadth-first-start',
     usePagesSkip: false,
     pagesSkip: 5,
@@ -178,9 +177,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     const scanData = {
       type: scanType,
       domain: formData.domain,
-      maxConcurrentProductRequests: Number(formData.maxConcurrentProductRequests),
-      minRank: Number(formData.minRank),
-      maxRank: Number(formData.maxRank),
+      maxConcurrentRequests: 1,
     };
 
     if (scanType === 'ASIN') {
@@ -195,11 +192,12 @@ const NewScanModal = ({ isOpen, onClose }) => {
         return;
       }
       scanData.mainCategoryId = formData.mainCategoryId;
-      scanData.maxConcurrentCategoryRequests = Number(formData.maxConcurrentCategoryRequests);
       scanData.strategy = formData.strategy;
       scanData.usePagesSkip = formData.usePagesSkip;
       scanData.pagesSkip = formData.pagesSkip;
       scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
+      scanData.minRank = Number(formData.minRank);
+      scanData.maxRank = Number(formData.maxRank);
     } else if (scanType === 'Deals') {
       if (Number(formData.numberOfProductsToCheck) < 12) {
         alert('Number of products to gather must be at least 12 for Deals scans.');
@@ -439,15 +437,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
           onChange={handleInputChange}
           min="12"
         />
-        {!scrapingProviderHasConcurrencyInfo &&
-          <NumberInput
-            label="Max Concurrent Category Requests"
-            name="maxConcurrentCategoryRequests"
-            value={formData.maxConcurrentCategoryRequests}
-            onChange={handleInputChange}
-            min="1"
-          />
-        }
       </CategoryAndDealsForm>
     ) : (
       <p className="text-red-400">No complete main categories are available for this domain. Please gather categories first.</p>
@@ -528,11 +517,11 @@ const NewScanModal = ({ isOpen, onClose }) => {
           {!scrapingProviderHasConcurrencyInfo && (
             <div className="col-span-2">
               <NumberInput
-                label="Max Concurrent Product Requests"
-                name="maxConcurrentProductRequests"
-                value={formData.maxConcurrentProductRequests}
+                label="Max Concurrent Requests"
+                name="maxConcurrentRequests"
+                value={formData.maxConcurrentRequests}
                 onChange={handleInputChange}
-                min="0"
+                min="1"
               />
             </div>
           )}

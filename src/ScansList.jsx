@@ -39,7 +39,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
     e.stopPropagation(); // Prevent the row's onClick from firing
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?scanId=${scanId}`, "DELETE");
     if (scanId === currentScan._id) {
-      setCurrentScan({}); // Clear currentScan if the deleted scan was selected
+      setCurrentScan(null); // Clear currentScan if the deleted scan was selected
     }
     // Optionally, refetch scans to ensure UI is in sync
     await fetchScans();
@@ -166,7 +166,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
       let styleClass;
       if (entry.state === "active") {
         styleClass = activeScanStyle;
-      } else if (currentScan._id === entry._id) {
+      } else if (currentScan && currentScan._id === entry._id) {
         styleClass = selectedScanStyle;
       } else {
         styleClass = scanStyle;

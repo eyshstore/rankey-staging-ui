@@ -18,7 +18,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
   const [currentDomain, setCurrentDomain] = useState('');
 
   const [scans, setScans] = useState([]);
-  const [currentScan, setCurrentScan] = useState('');
+  const [currentScan, setCurrentScan] = useState(null);
 
   const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
 

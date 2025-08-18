@@ -110,38 +110,47 @@ const ScanDetails = ({ currentScan }) => {
   }
 
   let detailsDisplay;
-  if (scanDetails) {
-    switch (currentScan.type) {
-      case 'ASIN':
-        detailsDisplay = (
-          <div>
-            {scanDetails && (
+if (scanDetails) {
+  switch (currentScan.type) {
+    case 'ASIN':
+      detailsDisplay = (
+        <div>
+          <>
+            <p>
+              <strong>Products Gathered:</strong>{" "}
+              {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}
+            </p>
+            <p>
+              <strong>Requests sent:</strong> {scanDetails.requestsSent}
+            </p>
+
+            {scanDetails.ASINsRequests?.length > 0 && (
               <>
-                <p><strong>Products Gathered:</strong> {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}</p>
-                <p><strong>Requests sent:</strong> {scanDetails.requestsSent}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-                  {scanDetails.ASINsRequests.map((ASIN, i) => (
-                    <div
-                      key={ASIN}
-                      className="p-2 rounded shadow text-sm text-gray-800"
-                    >
-                      {`${i + 1}. ${ASIN}`}
-                    </div>
-                  ))}
-                </div>
+              <p>Current requests: </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                {scanDetails.ASINsRequests.map((ASIN, i) => (
+                  <div
+                    key={ASIN}
+                    className="p-1 rounded-xl shadow text-white-800 text-sm"
+                  >
+                    {`${i + 1}. ${ASIN}`}
+                  </div>
+                ))}
+              </div>
               </>
             )}
-          </div>
-        );
-        break;
-      case 'Category':
-        break;
-      case 'Deals':
-        break;
-      default:
-        detailsDisplay = <p>Unknown scan type</p>;
-    }
+          </>
+        </div>
+      );
+      break;
+    case "Category":
+      break;
+    case "Deals":
+      break;
+    default:
+      detailsDisplay = <p>Unknown scan type</p>;
   }
+}
 
   return (
     <div>
