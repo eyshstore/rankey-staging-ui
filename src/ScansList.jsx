@@ -38,7 +38,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
   const handleScanDelete = async (scanId, e) => {
     e.stopPropagation(); // Prevent the row's onClick from firing
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?scanId=${scanId}`, "DELETE");
-    if (scanId === currentScan._id) {
+    if (currentScan && scanId === currentScan._id) {
       setCurrentScan(null); // Clear currentScan if the deleted scan was selected
     }
     // Optionally, refetch scans to ensure UI is in sync
