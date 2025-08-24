@@ -19,7 +19,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     domain: 'com',
     ASINs: [],
     maxConcurrentRequests: 1,
-    numberOfProductsToCheck: 24,
+    numberOfProductsToCheck: 10,
     strategy: 'breadth-first-start',
     usePagesSkip: false,
     pagesSkip: 5,
@@ -451,7 +451,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
           name="numberOfProductsToCheck"
           value={formData.numberOfProductsToCheck}
           onChange={handleInputChange}
-          min="24"
+          min="10"
         />
       </CategoryAndDealsForm>
     ) : (
