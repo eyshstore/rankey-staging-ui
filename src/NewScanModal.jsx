@@ -3,6 +3,9 @@ import config from './config';
 import useRequest from '../hooks/useRequest.hook';
 import * as XLSX from 'xlsx';
 
+import SelectInput from './SelectInput';
+import CategoryForm from './CategoryForm';
+
 const NewScanModal = ({ isOpen, onClose }) => {
   const mainCategoriesRequest = useRequest();
   const submitRequest = useRequest();
@@ -18,15 +21,15 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     domain: 'com',
     ASINs: [],
-    maxConcurrentRequests: 1,
-    numberOfProductsToCheck: 10,
+    maxConcurrentRequests: '1',
+    numberOfProductsToCheck: '1',
     strategy: 'breadth-first-start',
     usePagesSkip: false,
-    pagesSkip: 5,
+    pagesSkip: '5',
     scrapeAllSections: false,
-    minRank: 1,
-    maxRank: 10000,
-    mainCategoryId: "",
+    minRank: '1',
+    maxRank: '10000',
+    mainCategoryId: '',
   });
 
   const [mainCategories, setMainCategories] = useState({
@@ -39,40 +42,33 @@ const NewScanModal = ({ isOpen, onClose }) => {
     { value: 'de', label: 'Germany (https://www.amazon.de)' },
   ];
 
-  const strategies = [
-    { value: 'breadth-first-start', label: 'Breadth-first start' },
-    { value: 'breadth-first-end', label: 'Breadth-first end' },
-    { value: 'depth-first-start', label: 'Depth-first start' },
-    { value: 'depth-first-end', label: 'Depth-first end' },
-  ];
-
   // API Calls
-  const fetchMainCategories = async () => {
-    if (!mainCategories[formData.domain]?.length) {
-      const data = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${formData.domain}`);
-      if (data.mainCategories?.length) {
-        setMainCategories((prev) => ({ ...prev, [formData.domain]: data.mainCategories }));
-        setFormData((prev) => ({ ...prev, mainCategoryId: data.mainCategories[0]._id }));
-      }
-    }
+  const fetchMainCategories = async (domain) => {
+    const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${domain}`);
+    setMainCategories(prev => ({ ...prev, [domain]: response.mainCategories, }));
   };
 
   const checkScrapingProviderStatusApiEndpoint = async () => {
     try {
-      const data = await scrapingProviderStatusApiEndpointRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/concurrency`);
-      setScrapingProviderHasConcurrencyInfo(data.currentScrapingProviderHasConcurrencyInfo);
+      const response = await scrapingProviderStatusApiEndpointRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/concurrency`);
+      setScrapingProviderHasConcurrencyInfo(response.currentScrapingProviderHasConcurrencyInfo);
     } catch (error) {
-
+      // Handle error silently as in original code
     }
   };
 
   // Effects
   useEffect(() => {
-    if (isOpen) {
-      fetchMainCategories();
-      checkScrapingProviderStatusApiEndpoint();
-    }
-  }, [isOpen, formData.domain]);
+    const updateInfo = async () => {
+      if (isOpen) {
+        await fetchMainCategories("com");
+        await fetchMainCategories("de");
+        checkScrapingProviderStatusApiEndpoint();
+      }
+    };
+
+    updateInfo();
+  }, [isOpen]);
 
   useEffect(() => {
     const totalPages = Math.ceil(formData.ASINs.length / itemsPerPage);
@@ -85,16 +81,30 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === 'minRank' && Number(value) > formData.maxRank) return;
-    if (name === 'maxRank' && Number(value) < formData.minRank) return;
+    setFormData((prev) => {
+      let newValue;
 
+      if (type === "checkbox") {
+        newValue = checked;
+      } else if (type === "number") {
+        // Keep as string so user can type freely (including empty value)
+        newValue = value;
+      } else {
+        newValue = value;
+      }
+
+      return { ...prev, [name]: newValue };
+    });
+  };
+
+  const mainCategoryOnChange = (e) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      mainCategoryId: mainCategories[formData.domain].find((mainCategory) => mainCategory._id === e.target.value)?._id || '',
     }));
   };
 
-  const handleAddAsin = () => {
+  const handleAddAsin = useCallback(() => {
     const asin = newAsin.trim().toUpperCase();
     if (!/^[A-Z0-9]{10}$/.test(asin)) {
       alert('Please enter a valid ASIN (10 characters, alphanumeric)');
@@ -110,16 +120,16 @@ const NewScanModal = ({ isOpen, onClose }) => {
       return { ...prev, ASINs: updatedASINs };
     });
     setNewAsin('');
-  };
+  }, [formData.ASINs, newAsin]);
 
-  const handleRemoveAsin = (index) => {
+  const handleRemoveAsin = useCallback((index) => {
     setFormData((prev) => ({
       ...prev,
       ASINs: prev.ASINs.filter((_, i) => i !== index),
     }));
-  };
+  }, []);
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -170,9 +180,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
       alert('Unsupported file format. Please upload a CSV or XLSX file.');
     }
     e.target.value = null;
-  };
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     const scanData = {
       type: scanType,
@@ -187,10 +197,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
       }
       scanData.ASINs = formData.ASINs;
     } else if (scanType === 'Category') {
-      if (Number(formData.numberOfProductsToCheck) < 12) {
-        alert('Number of products to gather must be at least 12 for Category scans.');
-        return;
-      }
       scanData.mainCategoryId = formData.mainCategoryId;
       scanData.strategy = formData.strategy;
       scanData.usePagesSkip = formData.usePagesSkip;
@@ -199,8 +205,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
       scanData.minRank = Number(formData.minRank);
       scanData.maxRank = Number(formData.maxRank);
     } else if (scanType === 'Deals') {
-      if (Number(formData.numberOfProductsToCheck) < 12) {
-        alert('Number of products to gather must be at least 12 for Deals scans.');
+      if (Number(formData.numberOfProductsToCheck) < 1) {
+        alert('Number of products to gather must be at least 1 for Deals scans.');
         return;
       }
       scanData.mainCategoryId = formData.mainCategoryId;
@@ -209,104 +215,12 @@ const NewScanModal = ({ isOpen, onClose }) => {
 
     try {
       await submitRequest.request(`${config.apiBaseUrl}/amazon/scans/enqueue`, 'POST', { config: scanData });
-      console.log("Closing");
       onClose();
       setFormData((prev) => ({ ...prev, ASINs: [] }));
     } catch (error) {
       console.log(error);
     }
-  };
-
-  // Sub-components
-  const SelectInput = ({ label, name, value, onChange, options }) => (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-200">{label}</label>
-      <select
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-
-  const NumberInput = ({ label, name, value, onChange, min, disabled }) => (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-200">{label}</label>
-      <input
-        type="number"
-        name={name}
-        value={value}
-        onChange={onChange}
-        min={min}
-        disabled={disabled}
-        className={`w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-      />
-    </div>
-  );
-
-  const CheckboxInput = ({ label, name, checked, onChange }) => (
-    <div className="space-y-1">
-      <label className="flex items-center text-sm font-medium text-gray-200">
-        <input
-          type="checkbox"
-          name={name}
-          checked={checked}
-          onChange={onChange}
-          className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded"
-        />
-        {label}
-      </label>
-    </div>
-  );
-
-  const CategoryAndDealsForm = ({ children }) => (
-    <div className="space-y-4">
-      <div>
-        <SelectInput
-          label="Main Category"
-          name="mainCategoryId"
-          value={formData.mainCategoryId}
-          onChange={(e) =>
-            setFormData(prev => ({
-              ...prev,
-              mainCategoryId: mainCategories[formData.domain].find(mainCategory => mainCategory._id === e.target.value)._id,
-            }))
-          }
-          options={mainCategories[formData.domain].map(mainCategory => ({ value: mainCategory._id, label: mainCategory.name, }))}
-        />
-      </div>
-      <div>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <NumberInput
-              label="Min Rank"
-              name="minRank"
-              value={formData.minRank}
-              onChange={handleInputChange}
-              min="1"
-            />
-          </div>
-          <div className="flex-1">
-            <NumberInput
-              label="Max Rank"
-              name="maxRank"
-              value={formData.maxRank}
-              onChange={handleInputChange}
-              min="1"
-            />
-          </div>
-        </div>
-      </div>
-      {children}
-    </div>
-  );
+  }, [scanType, formData, submitRequest, onClose]);
 
   const ASINForm = () => {
     const totalPages = formData.ASINs.length ? Math.ceil(formData.ASINs.length / itemsPerPage) : 1;
@@ -380,6 +294,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
             onChange={(e) => setNewAsin(e.target.value)}
             className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500"
             placeholder="Enter new ASIN"
+            id="newAsin"
             maxLength={10}
           />
         </div>
@@ -406,58 +321,39 @@ const NewScanModal = ({ isOpen, onClose }) => {
     );
   };
 
-  const CategoryForm = () => (
-    mainCategories[formData.domain].length ? (
-      <CategoryAndDealsForm>
-        <SelectInput
-          label="Strategy"
-          name="strategy"
-          value={formData.strategy}
-          onChange={handleInputChange}
-          options={strategies}
-        />
-        <CheckboxInput
-          label="Use Pages Skipping"
-          name="usePagesSkip"
-          checked={formData.usePagesSkip}
-          onChange={handleInputChange}
-        />
-        <NumberInput
-          label="Pages Skip"
-          name="pagesSkip"
-          value={formData.pagesSkip}
-          onChange={handleInputChange}
-          min="1"
-          disabled={!formData.usePagesSkip}
-        />
-        <NumberInput
-          label="Number of products to gather"
-          name="numberOfProductsToCheck"
-          value={formData.numberOfProductsToCheck}
-          onChange={handleInputChange}
-          min="12"
-        />
-      </CategoryAndDealsForm>
-    ) : (
-      <p className="text-red-400">No complete main categories are available for this domain. Please gather categories first.</p>
-    )
-  );
 
+  /*
   const DealsForm = () => (
     mainCategories[formData.domain].length ? (
       <CategoryAndDealsForm>
-        <NumberInput
-          label="Number of products to gather"
-          name="numberOfProductsToCheck"
-          value={formData.numberOfProductsToCheck}
-          onChange={handleInputChange}
-          min="10"
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-200">Number of products to gather</label>
+              <input
+                type="number"
+                name="numberOfProductsToCheck"
+                id="numberOfProductsToCheck_deals"
+                value={formData.numberOfProductsToCheck ?? ''}
+                onChange={handleInputChange}
+                min="10"
+                className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
       </CategoryAndDealsForm>
     ) : (
       <p className="text-red-400">No complete main categories are available for this domain. Please gather categories first.</p>
     )
   );
+  */
+
+  const [number, setNumber] = useState(1);
+  const numberOnChange = (event) => {
+    const { name, value } = event.target;
+    setNumber(value);
+  };
 
   if (!isOpen) return null;
 
@@ -484,11 +380,11 @@ const NewScanModal = ({ isOpen, onClose }) => {
           </button>
         </div>
         {submitRequest.error && (
-            <p className="bg-red-500 rounded mb-2 p-2 text-white">{submitRequest.error.message}</p>
-          )}
+          <p className="bg-red-500 rounded mb-2 p-2 text-white">{submitRequest.error.message}</p>
+        )}
         <div className="grid grid-cols-2 gap-4 mb-4">
-          {/* First select */}
           <div>
+
             <SelectInput
               label="Type"
               name="scanType"
@@ -501,8 +397,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
               ]}
             />
           </div>
-
-          {/* Second select */}
           <div>
             <SelectInput
               label="Domain"
@@ -512,25 +406,35 @@ const NewScanModal = ({ isOpen, onClose }) => {
               options={domains}
             />
           </div>
-
-          {/* Full-width NumberInput on next row */}
           {!scrapingProviderHasConcurrencyInfo && (
             <div className="col-span-2">
-              <NumberInput
-                label="Max Concurrent Requests"
-                name="maxConcurrentRequests"
-                value={formData.maxConcurrentRequests}
-                onChange={handleInputChange}
-                min="1"
-              />
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-200">Max Concurrent Requests</label>
+                <input
+                  type="number"
+                  name="maxConcurrentRequests"
+                  id="maxConcurrentRequests"
+                  value={formData.maxConcurrentRequests ?? ''}
+                  onChange={handleInputChange}
+                  min="1"
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
           )}
         </div>
-
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4">
           {scanType === 'ASIN' && <ASINForm />}
-          {scanType === 'Category' && <CategoryForm />}
-          {scanType === 'Deals' && <DealsForm />}
+          {
+            scanType === 'Category' && !mainCategoriesRequest.loading &&
+            <CategoryForm
+              mainCategories={mainCategories[formData.domain]}
+              handleInputChange={handleInputChange}
+              formData={formData}
+              mainCategoryOnChange={mainCategoryOnChange}
+            />
+          }
+          { /* scanType === 'Deals' && <DealsForm /> */}
           <button
             type="submit"
             className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 hover:cursor-pointer transition disabled:bg-gray-400"
