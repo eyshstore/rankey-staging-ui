@@ -93,6 +93,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
         newValue = value;
       }
 
+      if (name == "minRank" && value > formData.maxRank) { newValue = formData.maxRank; }
+      if (name == "maxRank" && value < formData.minRank) { newValue = formData.minRank; }
+
       return { ...prev, [name]: newValue };
     });
   };
