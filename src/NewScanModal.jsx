@@ -46,6 +46,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const fetchMainCategories = async (domain) => {
     const response = await mainCategoriesRequest.request(`${config.apiBaseUrl}/amazon/main-categories?domain=${domain}`);
     setMainCategories(prev => ({ ...prev, [domain]: response.mainCategories, }));
+    if (domain == "com" && response.mainCategories.length) {
+      setFormData(prev => ({ ...prev, mainCategoryId: response.mainCategories[0]._id, }))
+    }
   };
 
   const checkScrapingProviderStatusApiEndpoint = async () => {
@@ -352,11 +355,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
   );
   */
 
-  const [number, setNumber] = useState(1);
-  const numberOnChange = (event) => {
-    const { name, value } = event.target;
-    setNumber(value);
-  };
+  useEffect(() => {
+    submitRequest.clearError();
+  }, [scanType]);
 
   if (!isOpen) return null;
 
