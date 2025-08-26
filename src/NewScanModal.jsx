@@ -21,14 +21,14 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     domain: 'com',
     ASINs: [],
-    maxConcurrentRequests: '1',
-    numberOfProductsToCheck: '1',
+    maxConcurrentRequests: 1,
+    numberOfProductsToCheck: 1,
     strategy: 'breadth-first-start',
     usePagesSkip: false,
-    pagesSkip: '5',
+    pagesSkip: 5,
     scrapeAllSections: false,
-    minRank: '1',
-    maxRank: '10000',
+    minRank: 1,
+    maxRank: 10000,
     mainCategoryId: '',
   });
 
@@ -206,7 +206,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
       scanData.mainCategoryId = formData.mainCategoryId;
       scanData.strategy = formData.strategy;
       scanData.usePagesSkip = formData.usePagesSkip;
-      scanData.pagesSkip = formData.pagesSkip;
+      scanData.pagesSkip = Number(formData.pagesSkip);
       scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
       scanData.minRank = Number(formData.minRank);
       scanData.maxRank = Number(formData.maxRank);
