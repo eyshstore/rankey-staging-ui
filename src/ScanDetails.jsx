@@ -8,6 +8,10 @@ const ScanDetails = ({ currentScan }) => {
   const scanDetailsRequest = useRequest();
   const [scanDetails, setScanDetails] = useState(null);
 
+  if (!currentScan) {
+    return;
+  }
+
   // Fetch scan details when currentScan changes
   const fetchData = async () => {
     if (!currentScan?._id) return;

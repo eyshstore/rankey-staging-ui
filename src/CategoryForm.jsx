@@ -86,7 +86,7 @@ const CategoryForm = ({ mainCategories, formData, handleInputChange, mainCategor
             onChange={handleInputChange}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-200">Pages Skip</label>
+            <label className="block text-sm font-medium text-gray-200">Skip After</label>
             <input
               type="number"
               name="pagesSkip"
