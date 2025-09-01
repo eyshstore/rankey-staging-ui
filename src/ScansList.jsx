@@ -182,6 +182,9 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
           <td className="p-4">{entry.type}</td>
           <td className="p-4">{capitalize(entry.state)}</td>
           <td className="p-4">{entry.domain}</td>
+          <td className="p-4">{entry.numberOfProductsToCheck}</td>
+          <td className="p-4">{entry.mainCategory ? entry.mainCategory.name : "-"}</td>
+          <td className="p-4">{entry.minRank && entry.maxRank ? `${entry.minRank} - ${entry.maxRank}` : "-"}</td>
           <td className="p-4 text-center">{stateControls}</td>
         </tr>
       );
@@ -211,6 +214,9 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
             <th className="p-4 text-left border-b border-white">Type</th>
             <th className="p-4 text-left border-b border-white">State</th>
             <th className="p-4 text-left border-b border-white">Domain</th>
+            <th className="p-4 text-left border-b border-white">Products To Gather</th>
+            <th className="p-4 text-left border-b border-white">Main Category</th>
+            <th className="p-4 text-left border-b border-white">Rank Range</th>
             <th className="p-4 text-left border-b border-white"></th>
           </tr>
         </thead>

@@ -114,47 +114,118 @@ const ScanDetails = ({ currentScan }) => {
   }
 
   let detailsDisplay;
-if (scanDetails) {
-  switch (currentScan.type) {
-    case 'ASIN':
-      detailsDisplay = (
-        <div>
-          <>
-            <p>
-              <strong>Products Gathered:</strong>{" "}
-              {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}
-            </p>
-            <p>
-              <strong>Requests sent:</strong> {scanDetails.requestsSent}
-            </p>
+  if (scanDetails) {
+    switch (currentScan.type) {
+      case 'ASIN':
+        /*
+        [Only Real-Time]
+        1. Current Product Pages Requests (url)
 
-            {scanDetails.ASINsRequests?.length > 0 && (
-              <>
-              <p>Current requests: </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                {scanDetails.ASINsRequests.map((ASIN, i) => (
-                  <div
-                    key={ASIN}
-                    className="p-1 rounded-xl shadow text-white-800 text-sm"
-                  >
-                    {`${i + 1}. ${ASIN}`}
+        [Persistent Real-time]
+        1. Requests Sent
+        2. Requests Succeeded
+        3. Products Gathered / Products To Gather
+        */
+        detailsDisplay = (
+          <div>
+            <>
+              <p>
+                <strong>Products Gathered:</strong>{" "}
+                {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}
+              </p>
+              <p>
+                <strong>Requests sent:</strong> {scanDetails.requestsSent}
+              </p>
+
+              {scanDetails.ASINsRequests?.length > 0 && (
+                <>
+                  <p>Current product pages requests: </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                    {scanDetails.ASINsRequests.map((ASIN, i) => (
+                      <div
+                        key={ASIN}
+                        className="p-1 rounded-xl shadow text-white-800 text-sm"
+                      >
+                        {`${i + 1}. ${ASIN}`}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              </>
-            )}
-          </>
-        </div>
-      );
-      break;
-    case "Category":
-      break;
-    case "Deals":
-      break;
-    default:
-      detailsDisplay = <p>Unknown scan type</p>;
+                </>
+              )}
+            </>
+          </div>
+        );
+        break;
+      case "Category":
+        /*
+        [Only Real-Time]
+        1. Current Product Pages Requests (url)
+        2. Current Category Pages Requests (url)
+
+        [Persistent Real-time]
+        1. Category Pages Requests Sent
+        2. Category Pages Succeeded
+        3. Unique Products Found
+
+        4. Product Pages Requests Sent
+        5. Product Pages Requests Succeeded
+        6. Products Gathered / Products To Gather
+        */
+        detailsDisplay = (
+          <div>
+            <>
+              <p>
+                <strong>Products Gathered:</strong>{" "}
+                {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}
+              </p>
+
+              <p>
+                <strong>Category Requests sent:</strong> {scanDetails.categoryRequestsSent}
+              </p>
+              {scanDetails.categoryPagesRequests?.length > 0 && (
+                <>
+                  <p>Current product pages requests: </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                    {scanDetails.ASINsRequests.map((ASIN, i) => (
+                      <div
+                        key={ASIN}
+                        className="p-1 rounded-xl shadow text-white-800 text-sm"
+                      >
+                        {`${i + 1}. ${ASIN}`}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <p>
+                <strong>Category Requests sent:</strong> {scanDetails.categoryRequestsSent}
+              </p>
+              {scanDetails.productPagesRequests?.length > 0 && (
+                <>
+                  <p>Current category pages requests: </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                    {scanDetails.ASINsRequests.map((ASIN, i) => (
+                      <div
+                        key={ASIN}
+                        className="p-1 rounded-xl shadow text-white-800 text-sm"
+                      >
+                        {`${i + 1}. ${ASIN}`}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          </div>
+        );
+        break;
+      case "Deals":
+        break;
+      default:
+        detailsDisplay = <p>Unknown scan type</p>;
+    }
   }
-}
 
   return (
     <div>

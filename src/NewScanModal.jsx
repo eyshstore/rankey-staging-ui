@@ -397,7 +397,6 @@ const NewScanModal = ({ isOpen, onClose }) => {
               options={[
                 { value: 'ASIN', label: 'ASIN' },
                 { value: 'Category', label: 'Category' },
-                { value: 'Deals', label: 'Deals' },
               ]}
             />
           </div>
