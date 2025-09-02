@@ -178,7 +178,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
           key={entry._id}
           className={styleClass}
         >
-          <td className="p-4">{"..." + entry._id.slice(-8)}</td>
+          <td className="p-4">{"..." + entry._id.slice(-4)}</td>
           <td className="p-4">{entry.type}</td>
           <td className="p-4">{capitalize(entry.state)}</td>
           <td className="p-4">{entry.domain}</td>
@@ -192,7 +192,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
   } else {
     scansDisplay = (
       <tr>
-        <td colSpan={5} className="p-4 text-center">
+        <td colSpan={8} className="p-4 text-center">
           No scans available
         </td>
       </tr>

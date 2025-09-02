@@ -130,8 +130,7 @@ const ScanDetails = ({ currentScan }) => {
           <div>
             <>
               <p>
-                <strong>Products Gathered:</strong>{" "}
-                {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}
+                <strong>Products Gathered: {scanDetails.productsCount}</strong>
               </p>
               <p>
                 <strong>Requests sent:</strong> {scanDetails.requestsSent}
@@ -169,54 +168,70 @@ const ScanDetails = ({ currentScan }) => {
 
         4. Product Pages Requests Sent
         5. Product Pages Requests Succeeded
-        6. Products Gathered / Products To Gather
+        6. Products Gathered
         */
         detailsDisplay = (
-          <div>
-            <>
+          <div className="flex gap-6">
+            {/* Left column: Category requests */}
+            <div className="w-1/2">
               <p>
-                <strong>Products Gathered:</strong>{" "}
-                {scanDetails.productsCount} / {scanDetails.numberOfProductsToCheck}
+                <strong>Category Requests Sent: </strong> {scanDetails.categoryPagesRequestsSent}
+              </p>
+              <p>
+                <strong>Category Requests Failed: </strong> {scanDetails.categoryPagesRequestsFailed}
+              </p>
+              <p>
+                <strong>Unique Products Found: </strong> {scanDetails.uniqueProductsFound}
               </p>
 
+              {scanDetails.categoryPagesBeingRequested?.length > 0 && (
+                <div className="mt-3">
+                  <h3 className="text-sm font-semibold mb-1">Active Category Requests</h3>
+                  <div className="max-h-48 overflow-y-auto border border-gray-600 rounded-lg p-2 space-y-1 bg-gray-800">
+                    {scanDetails.categoryPagesBeingRequested.map((category, i) => (
+                      <div
+                        key={`${category.name}-${category.page}`}
+                        className="p-2 bg-gray-700 rounded text-xs"
+                      >
+                        {`${i + 1}. ${category.name}, Page: ${category.page}`}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right column: Product requests */}
+            <div className="w-1/2">
               <p>
-                <strong>Category Requests sent:</strong> {scanDetails.categoryRequestsSent}
+                <strong>Product Requests Sent: </strong> {scanDetails.productPagesRequestsSent}
               </p>
-              {scanDetails.categoryPagesRequests?.length > 0 && (
-                <>
-                  <p>Current product pages requests: </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                    {scanDetails.ASINsRequests.map((ASIN, i) => (
+              <p>
+                <strong>Product Requests Failed: </strong> {scanDetails.productPagesRequestsFailed}
+              </p>
+              <p>
+                <strong>Products Queue Length: </strong> {scanDetails.productsQueueLength}
+              </p>
+              <p>
+                <strong>Products Gathered: </strong> {scanDetails.productsCount}
+              </p>
+
+              {scanDetails.productASINsBeingRequested?.length > 0 && (
+                <div className="mt-3">
+                  <h3 className="text-sm font-semibold mb-1">Active Product Requests</h3>
+                  <div className="max-h-48 overflow-y-auto border border-gray-600 rounded-lg p-2 space-y-1 bg-gray-800">
+                    {scanDetails.productASINsBeingRequested.map((ASIN, i) => (
                       <div
                         key={ASIN}
-                        className="p-1 rounded-xl shadow text-white-800 text-sm"
+                        className="p-2 bg-gray-700 rounded text-xs"
                       >
                         {`${i + 1}. ${ASIN}`}
                       </div>
                     ))}
                   </div>
-                </>
+                </div>
               )}
-
-              <p>
-                <strong>Category Requests sent:</strong> {scanDetails.categoryRequestsSent}
-              </p>
-              {scanDetails.productPagesRequests?.length > 0 && (
-                <>
-                  <p>Current category pages requests: </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                    {scanDetails.ASINsRequests.map((ASIN, i) => (
-                      <div
-                        key={ASIN}
-                        className="p-1 rounded-xl shadow text-white-800 text-sm"
-                      >
-                        {`${i + 1}. ${ASIN}`}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
+            </div>
           </div>
         );
         break;
@@ -225,6 +240,41 @@ const ScanDetails = ({ currentScan }) => {
       default:
         detailsDisplay = <p>Unknown scan type</p>;
     }
+  }
+
+  const handleCopyDetails = () => {
+    if (!scanDetails) return;
+
+    // Build a plain text representation
+    const copyText = `
+    Category Scan ${currentScan._id}
+  
+    --- Category Stats ---
+    Requests Sent: ${scanDetails.categoryPagesRequestsSent}
+    Requests Failed: ${scanDetails.categoryPagesRequestsFailed}
+    Unique Products Found: ${scanDetails.uniqueProductsFound}
+  
+    --- Product Stats ---
+    Requests Sent: ${scanDetails.productPagesRequestsSent}
+    Requests Failed: ${scanDetails.productPagesRequestsFailed}
+    Products Queue Length: ${scanDetails.productsQueueLength}
+    Products Gathered: ${scanDetails.productsCount}
+  
+    --- Active Category Requests ---
+    ${scanDetails.categoryPagesBeingRequested?.map(
+      (c, i) => `${i + 1}. ${c.name}, Page: ${c.page}`
+    ).join("\n") || "None"}
+  
+    --- Active Product Requests ---
+    ${scanDetails.productASINsBeingRequested?.map(
+      (asin, i) => `${i + 1}. ${asin}`
+    ).join("\n") || "None"}
+    `;
+
+    navigator.clipboard.writeText(copyText.trim()).then(
+      () => alert("Details copied to clipboard ✅"),
+      (err) => console.error("Copy failed: ", err)
+    );
   }
 
   return (
@@ -240,6 +290,13 @@ const ScanDetails = ({ currentScan }) => {
           disabled={scanDetailsRequest.loading || !currentScan._id}
         >
           Download Products
+        </button>
+        <button
+          onClick={handleCopyDetails}
+          className="mb-4 ml-4 cursor-pointer px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50"
+          disabled={scanDetailsRequest.loading || !currentScan._id}
+        >
+          Copy Details
         </button>
         {detailsDisplay}
       </div>
