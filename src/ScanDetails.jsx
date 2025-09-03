@@ -20,6 +20,7 @@ const ScanDetails = ({ currentScan }) => {
     try {
       setScanDetails(null);
       const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScan._id}/details`);
+      console.log(response.details);
       setScanDetails(response.details);
     } catch (error) {
       console.error(`ScanDetails error: ${error}`);
@@ -46,6 +47,20 @@ const ScanDetails = ({ currentScan }) => {
 
     return () => eventSource.close();
   }, [currentScan?._id]); // Depend on currentScan._id to refetch on change
+
+  function formatDateTime(date) {
+    const pad = (n) => n.toString().padStart(2, '0');
+
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1); // Months are 0-indexed
+    const day = pad(date.getDate());
+
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+
+    return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`;
+  }
 
   const handleProductsDownload = async () => {
     try {
@@ -129,6 +144,9 @@ const ScanDetails = ({ currentScan }) => {
         detailsDisplay = (
           <div>
             <>
+              <p><strong>Created: </strong>{formatDateTime(new Date(scanDetails.createdAt))}</p>
+              {scanDetails.startedAt && <p><strong>Started: </strong>{formatDateTime(new Date(scanDetails.startedAt))}</p>}
+              {scanDetails.completedAt && <p><strong>Completed: </strong>{formatDateTime(new Date(scanDetails.completedAt))}</p>}
               <p>
                 <strong>Products Gathered: {scanDetails.productsCount}</strong>
               </p>
@@ -174,6 +192,11 @@ const ScanDetails = ({ currentScan }) => {
           <div className="flex gap-6">
             {/* Left column: Category requests */}
             <div className="w-1/2">
+              <p>
+                <strong>Created: </strong>{formatDateTime(new Date(scanDetails.createdAt))}
+              </p>
+              {scanDetails.startedAt && <p><strong>Started: </strong> {formatDateTime(new Date(scanDetails.startedAt))}</p>}
+              {scanDetails.completedAt && <p><strong>Completed: </strong> {formatDateTime(new Date(scanDetails.completedAt))}</p>}
               <p>
                 <strong>Category Requests Sent: </strong> {scanDetails.categoryPagesRequestsSent}
               </p>
@@ -281,19 +304,21 @@ const ScanDetails = ({ currentScan }) => {
     <div>
       <div className="bg-gray-800 p-4 rounded">
         {scanDetailsRequest.error && <p className="text-red-500">Error: {scanDetailsRequest.error}</p>}
-        <h2 className="text-lg font-bold mb-2">Scan {currentScan._id}</h2>
+        <h2 className="text-lg font-bold mb-2">
+          Scan {currentScan._id}
+          <button
+            onClick={handleProductsDownload}
+            className="ml-2 cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
+            disabled={scanDetailsRequest.loading || !currentScan._id}
+          >
+            Products
+          </button>
+        </h2>
       </div>
       <div className="flex-1 flex-col p-4">
         <button
-          onClick={handleProductsDownload}
-          className="mb-4 cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
-          disabled={scanDetailsRequest.loading || !currentScan._id}
-        >
-          Download Products
-        </button>
-        <button
           onClick={handleCopyDetails}
-          className="mb-4 ml-4 cursor-pointer px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50"
+          className="mb-4 cursor-pointer px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50"
           disabled={scanDetailsRequest.loading || !currentScan._id}
         >
           Copy Details

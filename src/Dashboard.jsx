@@ -66,7 +66,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
         </div>
       </div>
       <div className="flex flex-1 min-h-0">
-        <div className="flex-[1] border-r border-white shrink-0">
+        <div className="flex-[2] border-r border-white shrink-0">
           <button
             onClick={() => setCurrentSection("categories")}
             className={currentSection === "categories" ? selectedSectionStyle : sectionStyle}
@@ -80,7 +80,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
             Product scans
           </button>
         </div>
-        <div className="flex-[4] border-r border-white flex flex-col">
+        <div className="flex-[10] border-r border-white flex flex-col">
           {currentSection === "productScans" && (
             <button
               className="button bg-red-500 hover:bg-red-700 text-white p-2 m-2 rounded-md shrink-0"
@@ -91,7 +91,7 @@ const Dashboard = ({ setIsLoggedIn }) => {
           )}
           <div className="flex-1 min-h-0">{section}</div>
         </div>
-        <div className="flex-[5] flex flex-col min-h-0">{details}</div>
+        <div className="flex-[8] flex flex-col min-h-0">{details}</div>
       </div>
       <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
       <NewScanModal
