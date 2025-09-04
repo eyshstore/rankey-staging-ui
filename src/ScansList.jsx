@@ -27,56 +27,66 @@ const ResumeIcon = () => {
   );
 };
 
+
 const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
   const scansRequest = useRequest();
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchScans = async () => {
-    const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans`);
+  const fetchScans = async (pageToFetch = page) => {
+    const response = await scansRequest.request(
+      `${config.apiBaseUrl}/amazon/scans?page=${pageToFetch}`
+    );
+    console.log(response);
     setScans(response.scans);
+    setTotalPages(response.totalPages);
   };
 
   const handleScanDelete = async (scanId, e) => {
-    e.stopPropagation(); // Prevent the row's onClick from firing
+    e.stopPropagation();
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?scanId=${scanId}`, "DELETE");
     if (currentScan && scanId === currentScan._id) {
-      setCurrentScan(null); // Clear currentScan if the deleted scan was selected
+      setCurrentScan(null);
     }
-    // Optionally, refetch scans to ensure UI is in sync
-    await fetchScans();
+    await fetchScans(page); // reload current page
   };
 
   const handleDeleteAll = async (event) => {
     event.stopPropagation();
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/all`, "DELETE");
-    await fetchScans();
+    setPage(1); // reset to first page
+    await fetchScans(1);
   };
 
   const handleScanHalt = async (e) => {
-    e.stopPropagation(); // Prevent the row's onClick from firing
+    e.stopPropagation();
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/halt`, "POST");
-    // Optionally, refetch scans to update the state
-    await fetchScans();
+    await fetchScans(page);
   };
 
   const handleScanResume = async (e) => {
-    e.stopPropagation(); // Prevent the row's onClick from firing
+    e.stopPropagation();
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/resume`, "POST");
-    // Optionally, refetch scans to update the state
-    await fetchScans();
+    await fetchScans(page);
   };
 
   useEffect(() => {
-    fetchScans();
-
-    // Further updates from server
+    console.log(`Requesting page: ${page}`);
+    fetchScans(page);
+  }, [page]);
+  
+  // SSE connection (only once)
+  useEffect(() => {
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scans-list/events`, { withCredentials: true });
-    eventSource.onmessage = (event) => {
-      setScans(JSON.parse(event.data));
+    eventSource.onmessage = () => {
+      console.log(`RECEIVED AN UPDATE...`);
+      fetchScans(page);
     };
     eventSource.onerror = () => eventSource.close();
     return () => eventSource.close();
   }, []);
 
+  // Styles remain unchanged
   const scanStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
   const activeScanStyle = "bg-green-800 border-b border-indigo-200 hover:bg-indigo-800 hover:cursor-pointer";
   const selectedScanStyle = "bg-indigo-400 border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
@@ -100,16 +110,14 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
           break;
         case "active":
           stateControls = (
-            <div className="flex flex-col space-y-2">
-              <button
-                onClick={handleScanHalt}
-                className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
-                title="Stop Scan"
-                disabled={scansRequest.loading}
-              >
-                <HaltIcon />
-              </button>
-            </div>
+            <button
+              onClick={handleScanHalt}
+              className="hover:cursor-pointer bg-red-600 hover:bg-red-800 text-white p-2 rounded flex items-center justify-center w-10 h-10"
+              title="Stop Scan"
+              disabled={scansRequest.loading}
+            >
+              <HaltIcon />
+            </button>
           );
           break;
         case "stalled":
@@ -149,19 +157,14 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
         default:
           stateControls = (
             <div role="status">
-              <svg aria-hidden="true" className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor" />
-                <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill" />
+              <svg aria-hidden="true" className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101">
+                <path d="M100 50.5908C100 78.2051 ..." fill="currentColor" />
               </svg>
-              <span className="sr-only">Loading...</span>
             </div>
           );
       }
 
-      const capitalize = string => {
-        if (!string) return string;
-        return string.charAt(0).toUpperCase() + string.slice(1);
-      };
+      const capitalize = (string) => string ? string.charAt(0).toUpperCase() + string.slice(1) : string;
 
       let styleClass;
       if (entry.state === "active") {
@@ -201,13 +204,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
 
   return (
     <>
-      <button
-        className="button bg-red-500 hover:bg-red-700 text-white p-2 m-2 rounded-md shrink-0"
-        onClick={handleDeleteAll}
-      >
-        Delete all
-      </button>
-      <table className="w-full border-collapse">
+      <table className="w-full border-collapse text-sm">
         <thead>
           <tr>
             <th className="p-4 text-left border-b border-white">Id</th>
@@ -220,10 +217,29 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
             <th className="p-4 text-left border-b border-white"></th>
           </tr>
         </thead>
-        <tbody>
-          {scansDisplay}
-        </tbody>
+        <tbody>{scansDisplay}</tbody>
       </table>
+
+      {/* Pagination controls */}
+      <div className="flex justify-between items-center mt-4">
+        <button
+          onClick={() => setPage((p) => Math.max(p - 1, 1))}
+          disabled={page === 1}
+          className="ml-2 px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+        <span className="text-white">
+          Page {page} of {totalPages}
+        </span>
+        <button
+          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+          disabled={page === totalPages}
+          className="mr-2 px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </>
   );
 };

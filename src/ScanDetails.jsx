@@ -131,135 +131,176 @@ const ScanDetails = ({ currentScan }) => {
   let detailsDisplay;
   if (scanDetails) {
     switch (currentScan.type) {
-      case 'ASIN':
-        /*
-        [Only Real-Time]
-        1. Current Product Pages Requests (url)
-
-        [Persistent Real-time]
-        1. Requests Sent
-        2. Requests Succeeded
-        3. Products Gathered / Products To Gather
-        */
+      case "ASIN":
         detailsDisplay = (
           <div>
             <>
-              <p><strong>Created: </strong>{formatDateTime(new Date(scanDetails.createdAt))}</p>
-              {scanDetails.startedAt && <p><strong>Started: </strong>{formatDateTime(new Date(scanDetails.startedAt))}</p>}
-              {scanDetails.completedAt && <p><strong>Completed: </strong>{formatDateTime(new Date(scanDetails.completedAt))}</p>}
-              <p>
-                <strong>Products Gathered: {scanDetails.productsCount}</strong>
-              </p>
-              <p>
-                <strong>Requests sent:</strong> {scanDetails.requestsSent}
-              </p>
-
-              {scanDetails.ASINsRequests?.length > 0 && (
-                <>
-                  <p>Current product pages requests: </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                    {scanDetails.ASINsRequests.map((ASIN, i) => (
-                      <div
-                        key={ASIN}
-                        className="p-1 rounded-xl shadow text-white-800 text-sm"
-                      >
-                        {`${i + 1}. ${ASIN}`}
-                      </div>
-                    ))}
-                  </div>
-                </>
+              {scanDetails.createdAt && (
+                <p>
+                  <strong>Created: </strong>
+                  {formatDateTime(new Date(scanDetails.createdAt))}
+                </p>
               )}
+              {scanDetails.startedAt && (
+                <p>
+                  <strong>Started: </strong>
+                  {formatDateTime(new Date(scanDetails.startedAt))}
+                </p>
+              )}
+              {scanDetails.completedAt && (
+                <p>
+                  <strong>Completed: </strong>
+                  {formatDateTime(new Date(scanDetails.completedAt))}
+                </p>
+              )}
+              {scanDetails.productsCount !== undefined && (
+                <p>
+                  <strong>Products Gathered: </strong>
+                  {scanDetails.productsCount}
+                </p>
+              )}
+              {scanDetails.requestsSent !== undefined && (
+                <p>
+                  <strong>Requests Sent: </strong>
+                  {scanDetails.requestsSent}
+                </p>
+              )}
+
+              {Array.isArray(scanDetails.ASINsRequests) &&
+                scanDetails.ASINsRequests.length > 0 && (
+                  <>
+                    <p>Current Product Pages Requests:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                      {scanDetails.ASINsRequests.map((ASIN, i) => (
+                        <div
+                          key={ASIN}
+                          className="p-1 rounded-xl shadow text-white-800 text-sm"
+                        >
+                          {`${i + 1}. ${ASIN}`}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
             </>
           </div>
         );
         break;
+
       case "Category":
-        /*
-        [Only Real-Time]
-        1. Current Product Pages Requests (url)
-        2. Current Category Pages Requests (url)
-
-        [Persistent Real-time]
-        1. Category Pages Requests Sent
-        2. Category Pages Succeeded
-        3. Unique Products Found
-
-        4. Product Pages Requests Sent
-        5. Product Pages Requests Succeeded
-        6. Products Gathered
-        */
         detailsDisplay = (
-          <div className="flex gap-6">
+          <div className="flex gap-6 text-sm">
             {/* Left column: Category requests */}
             <div className="w-1/2">
-              <p>
-                <strong>Created: </strong>{formatDateTime(new Date(scanDetails.createdAt))}
-              </p>
-              {scanDetails.startedAt && <p><strong>Started: </strong> {formatDateTime(new Date(scanDetails.startedAt))}</p>}
-              {scanDetails.completedAt && <p><strong>Completed: </strong> {formatDateTime(new Date(scanDetails.completedAt))}</p>}
-              <p>
-                <strong>Category Requests Sent: </strong> {scanDetails.categoryPagesRequestsSent}
-              </p>
-              <p>
-                <strong>Category Requests Failed: </strong> {scanDetails.categoryPagesRequestsFailed}
-              </p>
-              <p>
-                <strong>Unique Products Found: </strong> {scanDetails.uniqueProductsFound}
-              </p>
-
-              {scanDetails.categoryPagesBeingRequested?.length > 0 && (
-                <div className="mt-3">
-                  <h3 className="text-sm font-semibold mb-1">Active Category Requests</h3>
-                  <div className="max-h-48 overflow-y-auto border border-gray-600 rounded-lg p-2 space-y-1 bg-gray-800">
-                    {scanDetails.categoryPagesBeingRequested.map((category, i) => (
-                      <div
-                        key={`${category.name}-${category.page}`}
-                        className="p-2 bg-gray-700 rounded text-xs"
-                      >
-                        {`${i + 1}. ${category.name}, Page: ${category.page}`}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {scanDetails.createdAt && (
+                <p>
+                  <strong>Created: </strong>
+                  {formatDateTime(new Date(scanDetails.createdAt))}
+                </p>
               )}
+              {scanDetails.startedAt && (
+                <p>
+                  <strong>Started: </strong>
+                  {formatDateTime(new Date(scanDetails.startedAt))}
+                </p>
+              )}
+              {scanDetails.completedAt && (
+                <p>
+                  <strong>Completed: </strong>
+                  {formatDateTime(new Date(scanDetails.completedAt))}
+                </p>
+              )}
+              {scanDetails.categoryPagesRequestsSent !== undefined && (
+                <p>
+                  <strong>Category Requests Sent: </strong>
+                  {scanDetails.categoryPagesRequestsSent}
+                </p>
+              )}
+              {scanDetails.categoryPagesRequestsSucceeded !== undefined && (
+                <p>
+                  <strong>Category Requests Succeeded: </strong>
+                  {scanDetails.categoryPagesRequestsSucceeded}
+                </p>
+              )}
+              {scanDetails.uniqueProductsFound !== undefined && (
+                <p>
+                  <strong>Unique Products Found: </strong>
+                  {scanDetails.uniqueProductsFound}
+                </p>
+              )}
+
+              {Array.isArray(scanDetails.categoryPagesBeingRequested) &&
+                scanDetails.categoryPagesBeingRequested.length > 0 && (
+                  <div className="mt-3">
+                    <h3 className="text-sm font-semibold mb-1">
+                      Active Category Requests
+                    </h3>
+                    <div className="max-h-48 overflow-y-auto border border-gray-600 rounded-lg p-2 space-y-1 bg-gray-800">
+                      {scanDetails.categoryPagesBeingRequested.map(
+                        (category, i) => (
+                          <div
+                            key={`${category.name}-${category.page}`}
+                            className="p-2 bg-gray-700 rounded text-xs"
+                          >
+                            {`${i + 1}. ${category.name}, Page: ${category.page}`}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
             </div>
 
             {/* Right column: Product requests */}
             <div className="w-1/2">
-              <p>
-                <strong>Product Requests Sent: </strong> {scanDetails.productPagesRequestsSent}
-              </p>
-              <p>
-                <strong>Product Requests Failed: </strong> {scanDetails.productPagesRequestsFailed}
-              </p>
-              <p>
-                <strong>Products Queue Length: </strong> {scanDetails.productsQueueLength}
-              </p>
-              <p>
-                <strong>Products Gathered: </strong> {scanDetails.productsCount}
-              </p>
-
-              {scanDetails.productASINsBeingRequested?.length > 0 && (
-                <div className="mt-3">
-                  <h3 className="text-sm font-semibold mb-1">Active Product Requests</h3>
-                  <div className="max-h-48 overflow-y-auto border border-gray-600 rounded-lg p-2 space-y-1 bg-gray-800">
-                    {scanDetails.productASINsBeingRequested.map((ASIN, i) => (
-                      <div
-                        key={ASIN}
-                        className="p-2 bg-gray-700 rounded text-xs"
-                      >
-                        {`${i + 1}. ${ASIN}`}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {scanDetails.productPagesRequestsSent !== undefined && (
+                <p>
+                  <strong>Product Requests Sent: </strong>
+                  {scanDetails.productPagesRequestsSent}
+                </p>
               )}
+              {scanDetails.productPagesRequestsSucceeded !== undefined && (
+                <p>
+                  <strong>Product Requests Succeeded: </strong>
+                  {scanDetails.productPagesRequestsSucceeded}
+                </p>
+              )}
+              {scanDetails.productsQueueLength !== undefined && (
+                <p>
+                  <strong>Products Queue Length: </strong>
+                  {scanDetails.productsQueueLength}
+                </p>
+              )}
+              {scanDetails.productsCount !== undefined && (
+                <p>
+                  <strong>Products Gathered: </strong>
+                  {scanDetails.productsCount}
+                </p>
+              )}
+
+              {Array.isArray(scanDetails.productASINsBeingRequested) &&
+                scanDetails.productASINsBeingRequested.length > 0 && (
+                  <div className="mt-3">
+                    <h3 className="text-sm font-semibold mb-1">
+                      Active Product Requests
+                    </h3>
+                    <div className="max-h-48 overflow-y-auto border border-gray-600 rounded-lg p-2 space-y-1 bg-gray-800">
+                      {scanDetails.productASINsBeingRequested.map((ASIN, i) => (
+                        <div key={ASIN} className="p-2 bg-gray-700 rounded text-xs">
+                          {`${i + 1}. ${ASIN}`}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
         );
         break;
+
       case "Deals":
         break;
+
       default:
         detailsDisplay = <p>Unknown scan type</p>;
     }
@@ -274,12 +315,12 @@ const ScanDetails = ({ currentScan }) => {
   
     --- Category Stats ---
     Requests Sent: ${scanDetails.categoryPagesRequestsSent}
-    Requests Failed: ${scanDetails.categoryPagesRequestsFailed}
+    Requests Succeeded: ${scanDetails.categoryPagesRequestsSucceeded}
     Unique Products Found: ${scanDetails.uniqueProductsFound}
   
     --- Product Stats ---
     Requests Sent: ${scanDetails.productPagesRequestsSent}
-    Requests Failed: ${scanDetails.productPagesRequestsFailed}
+    Requests Succeeded: ${scanDetails.productPagesRequestsSucceeded}
     Products Queue Length: ${scanDetails.productsQueueLength}
     Products Gathered: ${scanDetails.productsCount}
   

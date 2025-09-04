@@ -10,6 +10,7 @@ import NewScanModal from './NewScanModal';
 import config from './config';
 
 import useRequest from '../hooks/useRequest.hook';
+import ProductsList from './ProductsList';
 
 const Dashboard = ({ setIsLoggedIn }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -44,6 +45,9 @@ const Dashboard = ({ setIsLoggedIn }) => {
   } else if (currentSection === "productScans") {
     section = <ScansList scans={scans} setScans={setScans} currentScan={currentScan} setCurrentScan={setCurrentScan} />;
     details = currentScan && <ScanDetails currentScan={currentScan} />;
+  } else if (currentSection === "products") {
+    section = <ProductsList />;
+    details = <></>;
   }
 
   return (
@@ -78,6 +82,12 @@ const Dashboard = ({ setIsLoggedIn }) => {
             className={currentSection === "productScans" ? selectedSectionStyle : sectionStyle}
           >
             Product scans
+          </button>
+          <button
+            onClick={() => setCurrentSection("products")}
+            className={currentSection === "products" ? selectedSectionStyle : sectionStyle}
+          >
+            Products
           </button>
         </div>
         <div className="flex-[10] border-r border-white flex flex-col">
