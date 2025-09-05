@@ -90,6 +90,7 @@ const ScanDetails = ({ currentScan }) => {
         'changedInThisScan',
         'changedFields',
         'status',
+        'proxyCountry',
       ];
 
       const data = response.products.map(product => {
@@ -165,6 +166,14 @@ const ScanDetails = ({ currentScan }) => {
                   {scanDetails.requestsSent}
                 </p>
               )}
+              {
+                scanDetails.productPagesRequestsSucceeded !== undefined && (
+                  <p>
+                    <strong>Requests Succeeded: </strong>
+                    {scanDetails.productPagesRequestsSucceeded}
+                  </p>
+                )
+              }
 
               {Array.isArray(scanDetails.ASINsRequests) &&
                 scanDetails.ASINsRequests.length > 0 && (

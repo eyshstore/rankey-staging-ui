@@ -3,45 +3,95 @@ import useRequest from "../hooks/useRequest.hook";
 
 import config from "./config";
 
+import * as XLSX from "xlsx";
+
 const ProductsList = () => {
   const productsRequest = useRequest();
 
   const handleFetchProducts = async (domain) => {
-    const { products } = await productsRequest.request(`${config.apiBaseUrl}/products?domain=${domain}`);
+    let { products } = await productsRequest.request(
+      `${config.apiBaseUrl}/products?domain=${domain}`
+    );
 
     const fields = [
       'ASIN',
-      'domain',
+      'scanId',
+      'proxyCountry',
+      'status',
       'title',
       'price',
       'category',
       'isPrime',
-      'brand',
-      'rank',
-      'availabilityQuantity',
-      'availabilityStatus',
-      'color',
-      'size',
-      'dateFirstAvailable',
-      'discountCoupon',
-      'ratingStars',
-      'purchaseInfo',
-      'changedInThisScan',
-      'changedFields',
-      'status',
+      "brand",
+      "rank",
+      "availabilityQuantity",
+      "availabilityStatus",
+      "color",
+      "size",
+      "dateFirstAvailable",
+      "discountCoupon",
+      "ratingStars",
+      "purchaseInfo",
     ];
 
     const rows = [];
 
     for (let product of products) {
-      const changeHistory = product.changeHistory;
+      const changeHistory = product.changeHistory || [];
       delete product.changeHistory;
+
+      // push the base product
       rows.push(product);
-      const row = [];
-      rows.push(...changeHistory.changedFields);
+
+      // push history entries
+      const changeHistoryEntries = changeHistory.map((entry) => {
+        const changedFieldsObject = entry.changedFields.reduce((object, field) => {
+          object[field.field] = field.newValue;
+          return object;
+        }, {});
+
+        return {
+          scanId: entry.scanId,
+          status: entry.status,
+          timestamp: entry.timestamp,
+          ...changedFieldsObject,
+        };
+      });
+
+      rows.push(...changeHistoryEntries);
     }
 
-    console.log(rows.filter(row => row.ASIN == "B0D2JGYX3F"));
+    // Normalize rows so they strictly follow the "fields" order
+    const orderedRows = rows.map((row) =>
+      fields.reduce((obj, key) => {
+        obj[key] = row[key] ?? ""; // fill missing fields with empty string
+        return obj;
+      }, {})
+    );
+
+    const worksheet = XLSX.utils.json_to_sheet(orderedRows, { header: fields });
+    XLSX.utils.sheet_add_aoa(worksheet, [fields], { origin: "A1" });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    // trigger download
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `products_${domain}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
