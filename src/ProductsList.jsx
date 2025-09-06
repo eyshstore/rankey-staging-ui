@@ -16,6 +16,7 @@ const ProductsList = () => {
     const fields = [
       'ASIN',
       'scanId',
+      'createdAt',
       'proxyCountry',
       'status',
       'title',
@@ -52,6 +53,7 @@ const ProductsList = () => {
 
         return {
           scanId: entry.scanId,
+          createdAt: entry.createdAt,
           status: entry.status,
           timestamp: entry.timestamp,
           ...changedFieldsObject,

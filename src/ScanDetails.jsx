@@ -73,6 +73,8 @@ const ScanDetails = ({ currentScan }) => {
       const fields = [
         'ASIN',
         'domain',
+        'proxyCountry',
+        'createdAt',
         'title',
         'price',
         'category',
@@ -90,7 +92,6 @@ const ScanDetails = ({ currentScan }) => {
         'changedInThisScan',
         'changedFields',
         'status',
-        'proxyCountry',
       ];
 
       const data = response.products.map(product => {
