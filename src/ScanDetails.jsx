@@ -64,17 +64,23 @@ const ScanDetails = ({ currentScan }) => {
 
   const handleProductsDownload = async () => {
     try {
-      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScan._id}/products`);
+      const response = await scanDetailsRequest.request(
+        `${config.apiBaseUrl}/amazon/scans/${currentScan._id}/products`
+      );
+      console.log("---PRODUCTS---");
+      console.log(response.products);
+  
       if (!response || !response.products) {
         console.error('No products found in response');
         return;
       }
-
+  
+      // Replace createdAt → foundAt
       const fields = [
         'ASIN',
         'domain',
         'proxyCountry',
-        'createdAt',
+        'foundAt',  // ✅ new field
         'title',
         'price',
         'category',
@@ -93,22 +99,50 @@ const ScanDetails = ({ currentScan }) => {
         'changedFields',
         'status',
       ];
-
+  
+      // ===== Products sheet =====
       const data = response.products.map(product => {
         const row = {};
         fields.forEach(field => {
-          row[field] = product[field] !== undefined ? product[field] : '';
+          if (field === 'foundAt') {
+            // Format foundAt as ISO string for Excel readability
+            row[field] = product.foundAt
+              ? new Date(product.foundAt).toISOString()
+              : '';
+          } else {
+            row[field] = product[field] !== undefined ? product[field] : '';
+          }
         });
         return row;
       });
-
-      const worksheet = XLSX.utils.json_to_sheet(data);
+  
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
-      XLSX.utils.sheet_add_aoa(worksheet, [fields], { origin: 'A1' });
-
+      const productsSheet = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(workbook, productsSheet, 'Products');
+      XLSX.utils.sheet_add_aoa(productsSheet, [fields], { origin: 'A1' });
+  
+      // ===== Summary sheet (if present) =====
+      if (response.summary) {
+        const summaryEntries = Object.entries(response.summary).flatMap(([key, value]) => {
+          if (typeof value === 'object' && value !== null) {
+            return Object.entries(value).map(([subKey, subVal]) => ({
+              Metric: `${key}.${subKey}`,
+              Value: subVal,
+            }));
+          }
+          return { Metric: key, Value: value };
+        });
+  
+        const summarySheet = XLSX.utils.json_to_sheet(summaryEntries);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+        XLSX.utils.sheet_add_aoa(summarySheet, [['Metric', 'Value']], { origin: 'A1' });
+      }
+  
+      // ===== Write file =====
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const blob = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
