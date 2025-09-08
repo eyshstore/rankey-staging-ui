@@ -79,6 +79,7 @@ const ScanDetails = ({ currentScan }) => {
       const fields = [
         'ASIN',
         'domain',
+        'status',
         'proxyCountry',
         'foundAt',  // ✅ new field
         'title',
@@ -97,7 +98,6 @@ const ScanDetails = ({ currentScan }) => {
         'purchaseInfo',
         'changedInThisScan',
         'changedFields',
-        'status',
       ];
   
       // ===== Products sheet =====
