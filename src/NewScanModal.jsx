@@ -30,6 +30,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
     minRank: 1,
     maxRank: 10000,
     mainCategoryId: '',
+    maxRerequests: 3,
+    maxRequests: 10000,
   });
 
   const [mainCategories, setMainCategories] = useState({
@@ -193,7 +195,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
     const scanData = {
       type: scanType,
       domain: formData.domain,
-      maxConcurrentRequests: 1,
+      maxConcurrentRequests: formData.maxConcurrentRequests,
+      maxRequests: formData.maxRequests,
+      maxRerequests: formData.maxRerequests,
     };
 
     if (scanType === 'ASIN') {
@@ -409,6 +413,38 @@ const NewScanModal = ({ isOpen, onClose }) => {
               options={domains}
             />
           </div>
+
+          <div className="col-span-2 flex gap-4">
+            <div className="flex-1">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-200">Max Requests</label>
+                <input
+                  type="number"
+                  name="maxRequests"
+                  id="maxRequests"
+                  value={formData.maxRequests ?? ''}
+                  onChange={handleInputChange}
+                  min="1"
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-200">Max Re-requests</label>
+                <input
+                  type="number"
+                  name="maxRerequests"
+                  id="maxRerequests"
+                  value={formData.maxRerequests ?? ''}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
           {!scrapingProviderHasConcurrencyInfo && (
             <div className="col-span-2">
               <div className="space-y-1">
