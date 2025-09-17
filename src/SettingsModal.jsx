@@ -21,13 +21,11 @@ const SettingsModal = ({ isOpen, onClose }) => {
     }
   };
 
-  /*
   const handleRenewCredits = async (event) => {
     event.stopPropagation();
     await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/renew`, "POST");
     console.log("Credits for MockAmazonProvider successfully renewed.");
   };
-  */
 
   useEffect(() => {
     if (!isOpen) return;
@@ -89,11 +87,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-       {/*
+
         <button className="button bg-red-500 hover:bg-red-700 text-white p-2 m-2 rounded-md shrink-0" onClick={handleRenewCredits}>
           Renew MockAmazonProvider
         </button>
-  */}
 
         {error && (
           <div className="bg-red-500 text-white p-2 rounded-md mb-4">

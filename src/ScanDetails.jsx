@@ -1,26 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import useRequest from '../hooks/useRequest.hook';
 import config from './config';
 
-const ScanDetails = ({ currentScan }) => {
+const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
   const scanDetailsRequest = useRequest();
   const [scanDetails, setScanDetails] = useState(null);
+  const intervalRef = useRef(null);
 
-  if (!currentScan) {
+  if (!currentScanId) {
     return;
   }
 
   // Fetch scan details when currentScan changes
-  const fetchData = async () => {
-    if (!currentScan?._id) return;
-    console.log(`Fetching data for: ${currentScan._id}`);
-
+  const fetchDetails = async () => {
+    if (!currentScanId) return;
+  
     try {
-      setScanDetails(null);
-      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScan._id}/details`);
-      console.log(response.details);
+      const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScanId}/details`);
       setScanDetails(response.details);
     } catch (error) {
       console.error(`ScanDetails error: ${error}`);
@@ -28,25 +26,33 @@ const ScanDetails = ({ currentScan }) => {
   };
 
   useEffect(() => {
-    fetchData();
+    setFetchDetailsCallback(() => fetchDetails);
+    return () => setFetchDetailsCallback(null);
+  }, []);
 
-    // Establish EventSource for real-time updates
-    if (!currentScan?._id) return;
+  useEffect(() => {
+    if (currentScanId) {
+      fetchDetails();
+    } else {
+      setScanDetails(null);
+    }
+  }, [currentScanId]);
 
-    const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scan-details/events`, { withCredentials: true });
-    eventSource.onmessage = (event) => {
-      const { scanId, details } = JSON.parse(event.data);
-      if (currentScan._id === scanId) {
-        setScanDetails(details);
+  useEffect(() => {
+    const scan = scans.find(scan => scan._id === currentScanId);
+    if (scan?.state === 'active') {
+      intervalRef.current = setInterval(() => {
+        fetchDetails();
+      }, 3000);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-    eventSource.onerror = () => {
-      console.error('EventSource error');
-      eventSource.close();
-    };
-
-    return () => eventSource.close();
-  }, [currentScan?._id]); // Depend on currentScan._id to refetch on change
+  }, [currentScanId, scans]);
 
   function formatDateTime(date) {
     const pad = (n) => n.toString().padStart(2, '0');
@@ -65,11 +71,9 @@ const ScanDetails = ({ currentScan }) => {
   const handleProductsDownload = async () => {
     try {
       const response = await scanDetailsRequest.request(
-        `${config.apiBaseUrl}/amazon/scans/${currentScan._id}/products`
+        `${config.apiBaseUrl}/amazon/scans/${currentScanId}/products`
       );
-      console.log("---PRODUCTS---");
-      console.log(response.products);
-  
+
       if (!response || !response.products) {
         console.error('No products found in response');
         return;
@@ -81,7 +85,10 @@ const ScanDetails = ({ currentScan }) => {
         'domain',
         'status',
         'proxyCountry',
-        'foundAt',  // ✅ new field
+        'requestsSent',
+        'requestedAt',
+        'receivedAt',
+
         'title',
         'price',
         'category',
@@ -96,7 +103,8 @@ const ScanDetails = ({ currentScan }) => {
         'discountCoupon',
         'ratingStars',
         'purchaseInfo',
-        'changedInThisScan',
+
+        'changed',
         'changedFields',
       ];
   
@@ -146,7 +154,7 @@ const ScanDetails = ({ currentScan }) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `scan_${currentScan._id}_products.xlsx`;
+      link.download = `scan_${currentScanId}_products.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -156,7 +164,7 @@ const ScanDetails = ({ currentScan }) => {
     }
   };
 
-  if (!currentScan) {
+  if (!currentScanId) {
     return <p className="p-4 text-gray-500">No scan selected</p>;
   }
 
@@ -166,7 +174,9 @@ const ScanDetails = ({ currentScan }) => {
 
   let detailsDisplay;
   if (scanDetails) {
-    switch (currentScan.type) {
+    const scan = scans.find(scan => scan._id == currentScanId);
+
+    switch (scan.type) {
       case "ASIN":
         detailsDisplay = (
           <div>
@@ -189,12 +199,6 @@ const ScanDetails = ({ currentScan }) => {
                   {formatDateTime(new Date(scanDetails.completedAt))}
                 </p>
               )}
-              {scanDetails.productsCount !== undefined && (
-                <p>
-                  <strong>Products Gathered: </strong>
-                  {scanDetails.productsCount}
-                </p>
-              )}
               {scanDetails.requestsSent !== undefined && (
                 <p>
                   <strong>Requests Sent: </strong>
@@ -209,6 +213,12 @@ const ScanDetails = ({ currentScan }) => {
                   </p>
                 )
               }
+              {scanDetails.productsCount !== undefined && (
+                <p>
+                  <strong>Products Gathered: </strong>
+                  {scanDetails.productsCount}
+                </p>
+              )}
 
               {Array.isArray(scanDetails.ASINsRequests) &&
                 scanDetails.ASINsRequests.length > 0 && (
@@ -355,7 +365,7 @@ const ScanDetails = ({ currentScan }) => {
 
     // Build a plain text representation
     const copyText = `
-    Category Scan ${currentScan._id}
+    Category Scan ${currentScanId}
   
     --- Category Stats ---
     Requests Sent: ${scanDetails.categoryPagesRequestsSent}
@@ -390,11 +400,11 @@ const ScanDetails = ({ currentScan }) => {
       <div className="bg-gray-800 p-4 rounded">
         {scanDetailsRequest.error && <p className="text-red-500">Error: {scanDetailsRequest.error}</p>}
         <h2 className="text-lg font-bold mb-2">
-          Scan {currentScan._id}
+          Scan {currentScanId}
           <button
             onClick={handleProductsDownload}
             className="ml-2 cursor-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
-            disabled={scanDetailsRequest.loading || !currentScan._id}
+            disabled={scanDetailsRequest.loading || !currentScanId}
           >
             Products
           </button>
@@ -404,7 +414,7 @@ const ScanDetails = ({ currentScan }) => {
         <button
           onClick={handleCopyDetails}
           className="mb-4 cursor-pointer px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50"
-          disabled={scanDetailsRequest.loading || !currentScan._id}
+          disabled={scanDetailsRequest.loading || !currentScanId}
         >
           Copy Details
         </button>

@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from 'react';
+import { React, useState, useEffect, useCalback } from 'react';
 import config from './config';
 import useRequest from '../hooks/useRequest.hook';
 
@@ -28,16 +28,13 @@ const ResumeIcon = () => {
 };
 
 
-const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
+const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDetailsCallback }) => {
   const scansRequest = useRequest();
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const fetchScans = async (pageToFetch = page) => {
-    const response = await scansRequest.request(
-      `${config.apiBaseUrl}/amazon/scans?page=${pageToFetch}`
-    );
-    console.log(response);
+    const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?page=${pageToFetch}`);
     setScans(response.scans);
     setTotalPages(response.totalPages);
   };
@@ -45,18 +42,20 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
   const handleScanDelete = async (scanId, e) => {
     e.stopPropagation();
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?scanId=${scanId}`, "DELETE");
-    if (currentScan && scanId === currentScan._id) {
-      setCurrentScan(null);
+    if (currentScanId && scanId == currentScanId) {
+      setCurrentScanId("");
     }
     await fetchScans(page); // reload current page
   };
 
+  /*
   const handleDeleteAll = async (event) => {
     event.stopPropagation();
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/all`, "DELETE");
     setPage(1); // reset to first page
     await fetchScans(1);
   };
+  */
 
   const handleScanHalt = async (e) => {
     e.stopPropagation();
@@ -71,20 +70,21 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
   };
 
   useEffect(() => {
-    console.log(`Requesting page: ${page}`);
     fetchScans(page);
   }, [page]);
   
   // SSE connection (only once)
   useEffect(() => {
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scans-list/events`, { withCredentials: true });
-    eventSource.onmessage = () => {
-      console.log(`RECEIVED AN UPDATE...`);
-      fetchScans(page);
+    eventSource.onmessage = async () => {
+      await fetchScans(page);
+      if (currentScanId && fetchDetailsCallback) {
+        fetchDetailsCallback();
+      }
     };
     eventSource.onerror = () => eventSource.close();
     return () => eventSource.close();
-  }, []);
+  }, [page, fetchDetailsCallback, currentScanId]);
 
   // Styles remain unchanged
   const scanStyle = "border-b border-gray-200 hover:bg-indigo-800 hover:cursor-pointer";
@@ -169,7 +169,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
       let styleClass;
       if (entry.state === "active") {
         styleClass = activeScanStyle;
-      } else if (currentScan && currentScan._id === entry._id) {
+      } else if (currentScanId && currentScanId == entry._id) {
         styleClass = selectedScanStyle;
       } else {
         styleClass = scanStyle;
@@ -177,7 +177,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
 
       return (
         <tr
-          onClick={() => setCurrentScan(entry)}
+          onClick={() => setCurrentScanId(entry._id)}
           key={entry._id}
           className={styleClass}
         >
@@ -185,7 +185,7 @@ const ScansList = ({ scans, setScans, currentScan, setCurrentScan }) => {
           <td className="p-4">{entry.type}</td>
           <td className="p-4">{capitalize(entry.state)}</td>
           <td className="p-4">{entry.domain}</td>
-          <td className="p-4">{entry.numberOfProductsToCheck}</td>
+          <td className="p-4">{entry.numberOfProductsToGather}</td>
           <td className="p-4">{entry.mainCategory ? entry.mainCategory.name : "-"}</td>
           <td className="p-4">{entry.minRank && entry.maxRank ? `${entry.minRank} - ${entry.maxRank}` : "-"}</td>
           <td className="p-4 text-center">{stateControls}</td>

@@ -19,9 +19,10 @@ const Dashboard = ({ setIsLoggedIn }) => {
   const [currentDomain, setCurrentDomain] = useState('');
 
   const [scans, setScans] = useState([]);
-  const [currentScan, setCurrentScan] = useState(null);
+  const [currentScanId, setCurrentScanId] = useState("");
 
   const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
+  const [fetchDetailsCallback, setFetchDetailsCallback] = useState(null);
 
   const logoutRequest = useRequest();
 
@@ -43,8 +44,8 @@ const Dashboard = ({ setIsLoggedIn }) => {
     section = <DomainsList currentDomain={currentDomain} setCurrentDomain={setCurrentDomain} />;
     details = currentDomain && <DomainCategoriesDetails currentDomain={currentDomain} />;
   } else if (currentSection === "productScans") {
-    section = <ScansList scans={scans} setScans={setScans} currentScan={currentScan} setCurrentScan={setCurrentScan} />;
-    details = currentScan && <ScanDetails currentScan={currentScan} />;
+    section = <ScansList scans={scans} setScans={setScans} currentScanId={currentScanId} setCurrentScanId={setCurrentScanId} fetchDetailsCallback={fetchDetailsCallback} />;
+    details = currentScanId && <ScanDetails scans={scans} currentScanId={currentScanId} setFetchDetailsCallback={setFetchDetailsCallback} />;
   } else if (currentSection === "products") {
     section = <ProductsList />;
     details = <></>;
