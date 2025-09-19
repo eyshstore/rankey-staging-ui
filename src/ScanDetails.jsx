@@ -79,13 +79,12 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
         return;
       }
   
-      // Replace createdAt → foundAt
       const fields = [
         'ASIN',
         'domain',
         'status',
         'proxyCountry',
-        'requestsSent',
+        'sentRequests',
         'requestedAt',
         'receivedAt',
 
@@ -104,7 +103,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
         'ratingStars',
         'purchaseInfo',
 
-        'changed',
+        'changedInThisScan',
         'changedFields',
       ];
   
@@ -112,14 +111,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
       const data = response.products.map(product => {
         const row = {};
         fields.forEach(field => {
-          if (field === 'foundAt') {
-            // Format foundAt as ISO string for Excel readability
-            row[field] = product.foundAt
-              ? new Date(product.foundAt).toISOString()
-              : '';
-          } else {
-            row[field] = product[field] !== undefined ? product[field] : '';
-          }
+          row[field] = product[field] !== undefined ? product[field] : '';
         });
         return row;
       });
@@ -154,7 +146,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `scan_${currentScanId}_products.xlsx`;
+      link.download = `scan_${currentScanId}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -168,7 +160,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
     return <p className="p-4 text-gray-500">No scan selected</p>;
   }
 
-  if (scanDetailsRequest.loading) {
+  if (!scanDetails && scanDetailsRequest.loading) {
     return <p className="p-4 text-gray-500">Loading...</p>;
   }
 
@@ -199,24 +191,16 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
                   {formatDateTime(new Date(scanDetails.completedAt))}
                 </p>
               )}
-              {scanDetails.requestsSent !== undefined && (
+              {scanDetails.sentRequests !== undefined && (
                 <p>
-                  <strong>Requests Sent: </strong>
-                  {scanDetails.requestsSent}
+                  <strong>Sent Requests: </strong>
+                  {scanDetails.sentRequests}
                 </p>
               )}
-              {
-                scanDetails.productPagesRequestsSucceeded !== undefined && (
-                  <p>
-                    <strong>Requests Succeeded: </strong>
-                    {scanDetails.productPagesRequestsSucceeded}
-                  </p>
-                )
-              }
-              {scanDetails.productsCount !== undefined && (
+              {scanDetails.productsGathered !== undefined && (
                 <p>
                   <strong>Products Gathered: </strong>
-                  {scanDetails.productsCount}
+                  { scanDetails.productsGathered + (scanDetails.numberOfProductsToGather !== undefined ? ` / ${scanDetails.numberOfProductsToGather}` : "") }
                 </p>
               )}
 
@@ -264,10 +248,10 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
                   {formatDateTime(new Date(scanDetails.completedAt))}
                 </p>
               )}
-              {scanDetails.categoryPagesRequestsSent !== undefined && (
+              {scanDetails.categoryPagessentRequests !== undefined && (
                 <p>
                   <strong>Category Requests Sent: </strong>
-                  {scanDetails.categoryPagesRequestsSent}
+                  {scanDetails.categoryPagessentRequests}
                 </p>
               )}
               {scanDetails.categoryPagesRequestsSucceeded !== undefined && (
@@ -307,10 +291,10 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
 
             {/* Right column: Product requests */}
             <div className="w-1/2">
-              {scanDetails.productPagesRequestsSent !== undefined && (
+              {scanDetails.productPagessentRequests !== undefined && (
                 <p>
                   <strong>Product Requests Sent: </strong>
-                  {scanDetails.productPagesRequestsSent}
+                  {scanDetails.productPagessentRequests}
                 </p>
               )}
               {scanDetails.productPagesRequestsSucceeded !== undefined && (
@@ -323,12 +307,6 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
                 <p>
                   <strong>Products Queue Length: </strong>
                   {scanDetails.productsQueueLength}
-                </p>
-              )}
-              {scanDetails.productsCount !== undefined && (
-                <p>
-                  <strong>Products Gathered: </strong>
-                  {scanDetails.productsCount}
                 </p>
               )}
 
@@ -368,15 +346,13 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
     Category Scan ${currentScanId}
   
     --- Category Stats ---
-    Requests Sent: ${scanDetails.categoryPagesRequestsSent}
-    Requests Succeeded: ${scanDetails.categoryPagesRequestsSucceeded}
+    Requests Sent: ${scanDetails.categoryPagessentRequests}
     Unique Products Found: ${scanDetails.uniqueProductsFound}
   
     --- Product Stats ---
-    Requests Sent: ${scanDetails.productPagesRequestsSent}
-    Requests Succeeded: ${scanDetails.productPagesRequestsSucceeded}
+    Requests Sent: ${scanDetails.productPagessentRequests}
     Products Queue Length: ${scanDetails.productsQueueLength}
-    Products Gathered: ${scanDetails.productsCount}
+    Products Gathered: ${scanDetails.productsGathered}
   
     --- Active Category Requests ---
     ${scanDetails.categoryPagesBeingRequested?.map(

@@ -35,6 +35,7 @@ const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDeta
 
   const fetchScans = async (pageToFetch = page) => {
     const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?page=${pageToFetch}`);
+    console.log(response.scans);
     setScans(response.scans);
     setTotalPages(response.totalPages);
   };
@@ -72,7 +73,7 @@ const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDeta
   useEffect(() => {
     fetchScans(page);
   }, [page]);
-  
+
   // SSE connection (only once)
   useEffect(() => {
     const eventSource = new EventSource(`${config.apiBaseUrl}/amazon/scans-list/events`, { withCredentials: true });
@@ -156,10 +157,8 @@ const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDeta
           break;
         default:
           stateControls = (
-            <div role="status">
-              <svg aria-hidden="true" className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-white-600" viewBox="0 0 100 101">
-                <path d="M100 50.5908C100 78.2051 ..." fill="currentColor" />
-              </svg>
+            <div className="spinner-container">
+              <div className="spinner"></div>
             </div>
           );
       }

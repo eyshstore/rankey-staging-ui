@@ -6,7 +6,7 @@ import useRequest from "../hooks/useRequest.hook";
 
 const SettingsModal = ({ isOpen, onClose }) => {
   const [availableScrapingProviders, setAvailableScrapingProviders] = useState([]);
-  const [currentScrapingProviderName, setCurrentScrapingProviderName] = useState(null);
+  const [selectedScrapingProviderName, setSelectedScrapingProviderName] = useState(null);
   const [error, setError] = useState(null);
 
   const scrapingProvidersRequest = useRequest();
@@ -15,7 +15,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     try {
       const data = await scrapingProvidersRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers`);
       setAvailableScrapingProviders(data.availableScrapingProviders);
-      setCurrentScrapingProviderName(data.currentScrapingProviderName);
+      setSelectedScrapingProviderName(data.selectedScrapingProviderName);
     } catch (error) {
       
     }
@@ -115,12 +115,12 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     <tr
                       key={provider.name}
                       className={
-                        provider.name === currentScrapingProviderName
+                        provider.name === selectedScrapingProviderName
                           ? "bg-indigo-500"
                           : "hover:bg-indigo-800 hover:cursor-pointer"
                       }
                       onClick={() =>
-                        provider.name !== currentScrapingProviderName &&
+                        provider.name !== selectedScrapingProviderName &&
                         handleSelectProvider(provider.name)
                       }
                     >

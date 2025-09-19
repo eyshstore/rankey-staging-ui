@@ -14,7 +14,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const [scanType, setScanType] = useState('ASIN');
   const [currentPage, setCurrentPage] = useState(1);
   const [newAsin, setNewAsin] = useState('');
-  const [scrapingProviderHasConcurrencyInfo, setScrapingProviderHasConcurrencyInfo] = useState(false);
+  const [selectedScrapingProviderHasConcurrencyInfo, setSelectedScrapingProviderHasConcurrencyInfo] = useState(true);
   const itemsPerPage = 10;
 
   // Utility Functions
@@ -56,7 +56,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const checkScrapingProviderStatusApiEndpoint = async () => {
     try {
       const response = await scrapingProviderStatusApiEndpointRequest.request(`${config.apiBaseUrl}/amazon/scraping-providers/concurrency`);
-      setScrapingProviderHasConcurrencyInfo(response.currentScrapingProviderHasConcurrencyInfo);
+      console.log(response);
+      setSelectedScrapingProviderHasConcurrencyInfo(response.selectedScrapingProviderHasConcurrencyInfo);
     } catch (error) {
       // Handle error silently as in original code
     }
@@ -196,8 +197,8 @@ const NewScanModal = ({ isOpen, onClose }) => {
       type: scanType,
       domain: formData.domain,
       maxConcurrentRequests: formData.maxConcurrentRequests,
-      maxRequests: formData.maxRequests,
-      maxRerequests: formData.maxRerequests,
+      maxRequests: Number(formData.maxRequests),
+      maxRerequests: Number(formData.maxRerequests),
     };
 
     if (scanType === 'ASIN') {
@@ -445,7 +446,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {!scrapingProviderHasConcurrencyInfo && (
+          {!selectedScrapingProviderHasConcurrencyInfo && (
             <div className="col-span-2">
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-200">Max Concurrent Requests</label>
