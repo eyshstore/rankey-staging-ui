@@ -35,7 +35,6 @@ const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDeta
 
   const fetchScans = async (pageToFetch = page) => {
     const response = await scansRequest.request(`${config.apiBaseUrl}/amazon/scans?page=${pageToFetch}`);
-    console.log(response.scans);
     setScans(response.scans);
     setTotalPages(response.totalPages);
   };
@@ -55,7 +54,7 @@ const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDeta
     await scansRequest.request(`${config.apiBaseUrl}/amazon/scans/all`, "DELETE");
     setPage(1); // reset to first page
     await fetchScans(1);
-  };
+  }
   */
 
   const handleScanHalt = async (e) => {
@@ -80,6 +79,7 @@ const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDeta
     eventSource.onmessage = async () => {
       await fetchScans(page);
       if (currentScanId && fetchDetailsCallback) {
+        console.log("Calling fetch details callback...");
         fetchDetailsCallback();
       }
     };

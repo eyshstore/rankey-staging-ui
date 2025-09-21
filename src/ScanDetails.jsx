@@ -19,6 +19,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
   
     try {
       const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScanId}/details`);
+      console.log(`Fetching details for ${currentScanId}: ${JSON.stringify(response.details, null, 2)}`);
       setScanDetails(response.details);
     } catch (error) {
       console.error(`ScanDetails error: ${error}`);
@@ -26,10 +27,13 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
   };
 
   useEffect(() => {
-    setFetchDetailsCallback(() => fetchDetails);
-    return () => setFetchDetailsCallback(null);
-  }, []);
-
+    if (currentScanId) {
+      setFetchDetailsCallback(() => fetchDetails);
+    } else {
+      setFetchDetailsCallback(null);
+    }
+  }, [currentScanId]);
+  
   useEffect(() => {
     if (currentScanId) {
       fetchDetails();
