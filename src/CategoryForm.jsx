@@ -106,9 +106,9 @@ const CategoryForm = ({ mainCategories, formData, handleInputChange, mainCategor
             <label className="block text-sm font-medium text-gray-200">Number of products to gather</label>
             <input
               type="number"
-              name="numberOfProductsToCheck"
-              id="numberOfProductsToCheck"
-              value={formData.numberOfProductsToCheck ?? ""}
+              name="numberOfProductsToGather"
+              id="numberOfProductsToGather"
+              value={formData.numberOfProductsToGather ?? ""}
               onChange={handleInputChange}
               min="1"
               className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500"

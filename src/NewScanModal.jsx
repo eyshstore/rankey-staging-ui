@@ -22,7 +22,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     domain: 'com',
     ASINs: [],
     maxConcurrentRequests: 1,
-    numberOfProductsToCheck: 1,
+    numberOfProductsToGather: 1,
     strategy: 'breadth-first-start',
     usePagesSkip: false,
     pagesSkip: 5,
@@ -212,16 +212,16 @@ const NewScanModal = ({ isOpen, onClose }) => {
       scanData.strategy = formData.strategy;
       scanData.usePagesSkip = formData.usePagesSkip;
       scanData.pagesSkip = Number(formData.pagesSkip);
-      scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
+      scanData.numberOfProductsToGather = Number(formData.numberOfProductsToGather);
       scanData.minRank = Number(formData.minRank);
       scanData.maxRank = Number(formData.maxRank);
     } else if (scanType === 'Deals') {
-      if (Number(formData.numberOfProductsToCheck) < 1) {
+      if (Number(formData.numberOfProductsToGather) < 1) {
         alert('Number of products to gather must be at least 1 for Deals scans.');
         return;
       }
       scanData.mainCategoryId = formData.mainCategoryId;
-      scanData.numberOfProductsToCheck = Number(formData.numberOfProductsToCheck);
+      scanData.numberOfProductsToGather = Number(formData.numberOfProductsToGather);
     }
 
     try {
@@ -343,9 +343,9 @@ const NewScanModal = ({ isOpen, onClose }) => {
               <label className="block text-sm font-medium text-gray-200">Number of products to gather</label>
               <input
                 type="number"
-                name="numberOfProductsToCheck"
-                id="numberOfProductsToCheck_deals"
-                value={formData.numberOfProductsToCheck ?? ''}
+                name="numberOfProductsToGather"
+                id="numberOfProductsToGather_deals"
+                value={formData.numberOfProductsToGather ?? ''}
                 onChange={handleInputChange}
                 min="10"
                 className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500"

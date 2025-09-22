@@ -185,8 +185,8 @@ const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDeta
           <td className="p-4">{capitalize(entry.state)}</td>
           <td className="p-4">{entry.domain}</td>
           <td className="p-4">{entry.numberOfProductsToGather}</td>
-          <td className="p-4">{entry.mainCategory ? entry.mainCategory.name : "-"}</td>
-          <td className="p-4">{entry.minRank && entry.maxRank ? `${entry.minRank} - ${entry.maxRank}` : "-"}</td>
+          <td className="p-4">{entry.maxRequests}</td>
+          <td className="p-4">{entry.maxRerequests}</td>
           <td className="p-4 text-center">{stateControls}</td>
         </tr>
       );
@@ -211,8 +211,8 @@ const ScansList = ({ scans, setScans, currentScanId, setCurrentScanId, fetchDeta
             <th className="p-4 text-left border-b border-white">State</th>
             <th className="p-4 text-left border-b border-white">Domain</th>
             <th className="p-4 text-left border-b border-white">Products To Gather</th>
-            <th className="p-4 text-left border-b border-white">Main Category</th>
-            <th className="p-4 text-left border-b border-white">Rank Range</th>
+            <th className="p-4 text-left border-b border-white">Max Requests</th>
+            <th className="p-4 text-left border-b border-white">Max Rerequests</th>
             <th className="p-4 text-left border-b border-white"></th>
           </tr>
         </thead>
