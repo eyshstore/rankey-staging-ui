@@ -16,7 +16,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
   // Fetch scan details when currentScan changes
   const fetchDetails = async () => {
     if (!currentScanId) return;
-  
+
     try {
       const response = await scanDetailsRequest.request(`${config.apiBaseUrl}/amazon/scans/${currentScanId}/details`);
       console.log(`Fetching details for ${currentScanId}: ${JSON.stringify(response.details, null, 2)}`);
@@ -33,7 +33,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
       setFetchDetailsCallback(null);
     }
   }, [currentScanId]);
-  
+
   useEffect(() => {
     if (currentScanId) {
       fetchDetails();
@@ -82,66 +82,59 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
         console.error('No products found in response');
         return;
       }
-  
-      const fields = [
-        'ASIN',
-        'domain',
-        'status',
-        'proxyCountry',
-        'sentRequests',
-        'requestedAt',
-        'receivedAt',
 
-        'title',
-        'price',
-        'category',
-        'isPrime',
-        'brand',
-        'rank',
-        'availabilityQuantity',
-        'availabilityStatus',
-        'color',
-        'size',
-        'dateFirstAvailable',
-        'discountCoupon',
-        'ratingStars',
-        'purchaseInfo',
+      const workbook = XLSX.utils.book_new();  // Initialize workbook at the start
 
-        'changedInThisScan',
-        'changedFields',
-      ];
-  
+      // ===== Categories sheet (if present) =====
+      if (Array.isArray(response.categories) && response.categories.length > 0) {
+        const categoryData = response.categories.map((cat) => ({
+          name: cat.name,
+          nodeId: cat.nodeId,
+          page: cat.page,
+          domain: cat.domain,
+          sentRequests: cat.sentRequests,
+          status: cat.status,
+          requestedAt: new Date(cat.requestedAt).toISOString(),
+          receivedAt: new Date(cat.receivedAt).toISOString(),
+          ASINs: cat.ASINs.join(', '),  // Join ASINs into comma-separated string
+        }));
+
+        const categoryFields = [
+          'name',
+          'nodeId',
+          'page',
+          'domain',
+          'sentRequests',
+          'status',
+          'requestedAt',
+          'receivedAt',
+          'proxyCountry',
+          'ASINs',
+        ];
+
+        const categoriesSheet = XLSX.utils.json_to_sheet(categoryData, { header: categoryFields });
+        XLSX.utils.book_append_sheet(workbook, categoriesSheet, 'Categories');
+      }
+
       // ===== Products sheet =====
+      const fields = [
+        'ASIN', 'domain', 'status', 'proxyCountry', 'sentRequests', 'requestedAt',
+        'receivedAt', 'title', 'price', 'category', 'isPrime', 'brand', 'rank',
+        'availabilityQuantity', 'availabilityStatus', 'color', 'size', 'dateFirstAvailable',
+        'discountCoupon', 'ratingStars', 'purchaseInfo', 'changedInThisScan', 'changedFields',
+      ];
+
       const data = response.products.map(product => {
         const row = {};
         fields.forEach(field => {
-          row[field] = product[field] !== undefined ? product[field] : '';
+          row[field] = product[field] !== undefined ? product[field] : '';  // Default to empty string
         });
         return row;
       });
-  
-      const workbook = XLSX.utils.book_new();
-      const productsSheet = XLSX.utils.json_to_sheet(data);
+
+      const productsSheet = XLSX.utils.json_to_sheet(data, { header: fields });
       XLSX.utils.book_append_sheet(workbook, productsSheet, 'Products');
-      XLSX.utils.sheet_add_aoa(productsSheet, [fields], { origin: 'A1' });
-  
-      // ===== Summary sheet (if present) =====
-      if (response.summary) {
-        const summaryEntries = Object.entries(response.summary).flatMap(([key, value]) => {
-          if (typeof value === 'object' && value !== null) {
-            return Object.entries(value).map(([subKey, subVal]) => ({
-              Metric: `${key}.${subKey}`,
-              Value: subVal,
-            }));
-          }
-          return { Metric: key, Value: value };
-        });
-  
-        const summarySheet = XLSX.utils.json_to_sheet(summaryEntries);
-        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
-        XLSX.utils.sheet_add_aoa(summarySheet, [['Metric', 'Value']], { origin: 'A1' });
-      }
-  
+
       // ===== Write file =====
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([excelBuffer], {
@@ -159,6 +152,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
       console.error('Error downloading products:', error);
     }
   };
+
 
   if (!currentScanId) {
     return <p className="p-4 text-gray-500">No scan selected</p>;
@@ -204,7 +198,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
               {scanDetails.productsGathered !== undefined && (
                 <p>
                   <strong>Products Gathered: </strong>
-                  { scanDetails.productsGathered + (scanDetails.numberOfProductsToGather !== undefined ? ` / ${scanDetails.numberOfProductsToGather}` : "") }
+                  {scanDetails.productsGathered + (scanDetails.numberOfProductsToGather !== undefined ? ` / ${scanDetails.numberOfProductsToGather}` : "")}
                 </p>
               )}
 
@@ -232,7 +226,6 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
       case "Category":
         detailsDisplay = (
           <div className="flex gap-6 text-sm">
-            {/* Left column: Category requests */}
             <div className="w-1/2">
               {scanDetails.createdAt && (
                 <p>
@@ -252,22 +245,16 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
                   {formatDateTime(new Date(scanDetails.completedAt))}
                 </p>
               )}
-              {scanDetails.categoryPagessentRequests !== undefined && (
+              {scanDetails.sentRequests !== undefined && (
                 <p>
-                  <strong>Category Requests Sent: </strong>
-                  {scanDetails.categoryPagessentRequests}
+                  <strong>Sent Requests: </strong>
+                  {scanDetails.sentRequests}
                 </p>
               )}
-              {scanDetails.categoryPagesRequestsSucceeded !== undefined && (
+              {scanDetails.productsGathered !== undefined && scanDetails.numberOfProductsToGather !== undefined && (
                 <p>
-                  <strong>Category Requests Succeeded: </strong>
-                  {scanDetails.categoryPagesRequestsSucceeded}
-                </p>
-              )}
-              {scanDetails.uniqueProductsFound !== undefined && (
-                <p>
-                  <strong>Unique Products Found: </strong>
-                  {scanDetails.uniqueProductsFound}
+                  <strong>Products Gathered: </strong>
+                  {`${scanDetails.productsGathered} / ${scanDetails.numberOfProductsToGather}`}
                 </p>
               )}
 
@@ -293,24 +280,41 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
                 )}
             </div>
 
-            {/* Right column: Product requests */}
             <div className="w-1/2">
-              {scanDetails.productPagessentRequests !== undefined && (
+              {scanDetails.mainCategoryName !== undefined && (
+                <p>
+                  <strong>Main Category: </strong>
+                  {scanDetails.mainCategoryName}
+                </p>
+              )}
+              {scanDetails.minRank !== undefined && scanDetails.maxRank !== undefined && (
+                <p>
+                  <strong>Rank Range: </strong>
+                  {`${scanDetails.minRank} - ${scanDetails.maxRank}`}
+                </p>
+              )}
+              {scanDetails.categoryPagesRequestsSent !== undefined && (
+                <p>
+                  <strong>Category Requests Sent: </strong>
+                  {scanDetails.categoryPagesRequestsSent}
+                </p>
+              )}
+              {scanDetails.categoryPagesRequestsSucceeded !== undefined && (
+                <p>
+                  <strong>Category Requests Succeeded: </strong>
+                  {scanDetails.categoryPagesRequestsSucceeded}
+                </p>
+              )}
+              {scanDetails.productPagesRequestsSent !== undefined && (
                 <p>
                   <strong>Product Requests Sent: </strong>
-                  {scanDetails.productPagessentRequests}
+                  {scanDetails.productPagesRequestsSent}
                 </p>
               )}
               {scanDetails.productPagesRequestsSucceeded !== undefined && (
                 <p>
                   <strong>Product Requests Succeeded: </strong>
                   {scanDetails.productPagesRequestsSucceeded}
-                </p>
-              )}
-              {scanDetails.productsQueueLength !== undefined && (
-                <p>
-                  <strong>Products Queue Length: </strong>
-                  {scanDetails.productsQueueLength}
                 </p>
               )}
 
