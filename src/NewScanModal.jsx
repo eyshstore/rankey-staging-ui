@@ -28,7 +28,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     pagesSkip: 5,
     scrapeAllSections: false,
     minRank: 1,
-    maxRank: 10000,
+    maxRank: 1000000,
     mainCategoryId: '',
     maxRerequests: 3,
     maxRequests: 10000,
@@ -141,7 +141,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
   const handleFileUpload = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+  
     const processRows = (rows) => {
       if (!rows.length) {
         alert('The uploaded file is empty.');
@@ -164,10 +164,10 @@ const NewScanModal = ({ isOpen, onClose }) => {
         return { ...prev, ASINs: newList };
       });
     };
-
+  
     const reader = new FileReader();
     const fileExtension = file.name.split('.').pop().toLowerCase();
-
+  
     if (fileExtension === 'csv') {
       reader.onload = (event) => {
         const text = event.target.result;
@@ -179,7 +179,17 @@ const NewScanModal = ({ isOpen, onClose }) => {
       reader.onload = (event) => {
         const data = event.target.result;
         const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
+  
+        // Look for the "Products" sheet
+        const sheetName = workbook.SheetNames.find(
+          (name) => name.toLowerCase() === 'products'
+        );
+  
+        if (!sheetName) {
+          alert('No sheet named "Products" found in the Excel file.');
+          return;
+        }
+  
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         processRows(rows);
@@ -188,6 +198,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     } else {
       alert('Unsupported file format. Please upload a CSV or XLSX file.');
     }
+  
     e.target.value = null;
   }, []);
 

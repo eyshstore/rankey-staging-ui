@@ -16,7 +16,8 @@ const ProductsList = () => {
     const fields = [
       'ASIN',
       'scanId',
-      'createdAt',
+      'requestedAt',
+      'receivedAt',
       'status',
       'proxyCountry',
       'title',

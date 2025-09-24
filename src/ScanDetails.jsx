@@ -78,6 +78,8 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
         `${config.apiBaseUrl}/amazon/scans/${currentScanId}/products`
       );
 
+      console.log(response);
+
       if (!response || !response.products) {
         console.error('No products found in response');
         return;
