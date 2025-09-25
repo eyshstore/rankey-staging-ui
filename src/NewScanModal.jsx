@@ -22,7 +22,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     domain: 'com',
     ASINs: [],
     maxConcurrentRequests: 1,
-    numberOfProductsToGather: 1,
+    numberOfProductsToGather: 10000,
     strategy: 'breadth-first-start',
     usePagesSkip: false,
     pagesSkip: 5,

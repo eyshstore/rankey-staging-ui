@@ -75,7 +75,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
   const handleProductsDownload = async () => {
     try {
       const response = await scanDetailsRequest.request(
-        `${config.apiBaseUrl}/amazon/scans/${currentScanId}/products`
+        `${config.apiBaseUrl}/amazon/scans/${currentScanId}/result`
       );
 
       console.log(response);
@@ -89,6 +89,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
 
       // ===== Categories sheet (if present) =====
       if (Array.isArray(response.categories) && response.categories.length > 0) {
+        console.log("Writing categories...");
         const categoryData = response.categories.map((cat) => ({
           name: cat.name,
           nodeId: cat.nodeId,
@@ -98,7 +99,8 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
           status: cat.status,
           requestedAt: new Date(cat.requestedAt).toISOString(),
           receivedAt: new Date(cat.receivedAt).toISOString(),
-          ASINs: cat.ASINs.join(', '),  // Join ASINs into comma-separated string
+          ASINs: cat.ASINs ? cat.ASINs.join(', ') : [],
+          link: `https://www.amazon.${cat.domain}/s?rh=n:${cat.nodeId}&fs=true&page=${cat.page}`,
         }));
 
         const categoryFields = [
@@ -112,6 +114,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
           'receivedAt',
           'proxyCountry',
           'ASINs',
+          'link', // ⬅️ Add this
         ];
 
         const categoriesSheet = XLSX.utils.json_to_sheet(categoryData, { header: categoryFields });
@@ -123,14 +126,18 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
         'ASIN', 'domain', 'status', 'proxyCountry', 'sentRequests', 'requestedAt',
         'receivedAt', 'title', 'price', 'category', 'isPrime', 'brand', 'rank',
         'availabilityQuantity', 'availabilityStatus', 'color', 'size', 'dateFirstAvailable',
-        'discountCoupon', 'ratingStars', 'purchaseInfo', 'changedInThisScan', 'changedFields',
+        'discountCoupon', 'ratingStars', 'purchaseInfo', 'changedInThisScan', 'changedFields', 'link'
       ];
 
       const data = response.products.map(product => {
         const row = {};
         fields.forEach(field => {
-          row[field] = product[field] !== undefined ? product[field] : '';  // Default to empty string
+          row[field] = product[field] !== undefined ? product[field] : '';
         });
+      
+        // Add link to product page
+        row.link = `https://www.amazon.${product.domain}/dp/${product.ASIN}`;
+      
         return row;
       });
 
@@ -253,10 +260,10 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
                   {scanDetails.sentRequests}
                 </p>
               )}
-              {scanDetails.productsGathered !== undefined && scanDetails.numberOfProductsToGather !== undefined && (
+              {scanDetails.productsGathered !== undefined && (
                 <p>
                   <strong>Products Gathered: </strong>
-                  {`${scanDetails.productsGathered} / ${scanDetails.numberOfProductsToGather}`}
+                  {scanDetails.productsGathered}
                 </p>
               )}
 
