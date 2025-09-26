@@ -136,7 +136,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
         });
       
         // Add link to product page
-        row.link = `https://www.amazon.${product.domain}/dp/${product.ASIN}`;
+        row.link = product.domain ? `https://www.amazon.${product.domain}/dp/${product.ASIN}` : "";
       
         return row;
       });
