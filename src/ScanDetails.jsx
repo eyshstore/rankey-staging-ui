@@ -328,7 +328,7 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
               )}
 
               {Array.isArray(scanDetails.productASINsBeingRequested) &&
-                scanDetails.productASINsBeingRequested.length > 0 && (
+                Array.from(scanDetails.productASINsBeingRequested).length > 0 && (
                   <div className="mt-3">
                     <h3 className="text-sm font-semibold mb-1">
                       Active Product Requests
@@ -347,9 +347,80 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
         );
         break;
 
-      case "Deals":
-        break;
-
+        case "Deals":
+          detailsDisplay = (
+            <div className="flex gap-6 text-sm">
+              <div className="w-1/2">
+                {scanDetails.createdAt && (
+                  <p>
+                    <strong>Created: </strong>
+                    {formatDateTime(new Date(scanDetails.createdAt))}
+                  </p>
+                )}
+                {scanDetails.startedAt && (
+                  <p>
+                    <strong>Started: </strong>
+                    {formatDateTime(new Date(scanDetails.startedAt))}
+                  </p>
+                )}
+                {scanDetails.completedAt && (
+                  <p>
+                    <strong>Completed: </strong>
+                    {formatDateTime(new Date(scanDetails.completedAt))}
+                  </p>
+                )}
+                {scanDetails.sentRequests !== undefined && (
+                  <p>
+                    <strong>Sent Requests: </strong>
+                    {scanDetails.sentRequests}
+                  </p>
+                )}
+                {scanDetails.productsGathered !== undefined && (
+                  <p>
+                    <strong>Products Gathered: </strong>
+                    {scanDetails.productsGathered}
+                    {scanDetails.numberOfProductsToGather !== undefined &&
+                      ` / ${scanDetails.numberOfProductsToGather}`}
+                  </p>
+                )}
+              </div>
+        
+              <div className="w-1/2">
+                {scanDetails.mainCategoryName && (
+                  <p>
+                    <strong>Main Category: </strong>
+                    {scanDetails.mainCategoryName}
+                  </p>
+                )}
+                {scanDetails.productPagesRequestsSucceeded !== undefined && (
+                  <p>
+                    <strong>Product Requests Succeeded: </strong>
+                    {scanDetails.productPagesRequestsSucceeded}
+                  </p>
+                )}
+        
+                {Array.isArray(scanDetails.productASINsBeingRequested) &&
+                  scanDetails.productASINsBeingRequested.length > 0 && (
+                    <div className="mt-3">
+                      <h3 className="text-sm font-semibold mb-1">
+                        Active Product Requests
+                      </h3>
+                      <div className="max-h-48 overflow-y-auto border border-gray-600 rounded-lg p-2 space-y-1 bg-gray-800">
+                        {scanDetails.productASINsBeingRequested.map((ASIN, i) => (
+                          <div
+                            key={ASIN}
+                            className="p-2 bg-gray-700 rounded text-xs"
+                          >
+                            {`${i + 1}. ${ASIN}`}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          );
+          break;
       default:
         detailsDisplay = <p>Unknown scan type</p>;
     }
