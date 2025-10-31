@@ -172,9 +172,8 @@ const ScanDetails = ({ scans, currentScanId, setFetchDetailsCallback }) => {
   }
 
   let detailsDisplay;
-  if (scanDetails) {
-    const scan = scans.find(scan => scan._id == currentScanId);
-
+  let scan = scans.find(scan => scan._id == currentScanId);
+  if (scanDetails && scan) {
     switch (scan.type) {
       case "ASIN":
         detailsDisplay = (
