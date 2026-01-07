@@ -110,7 +110,7 @@ const NewScanModal = ({ isOpen, onClose }) => {
     const scanData = {
       type: scanType,
       domain: formData.domain,
-      maxConcurrentRequests: formData.maxConcurrentRequests,
+      maxConcurrentRequests: Number(formData.maxConcurrentRequests),
       maxRequests: Number(formData.maxRequests),
       maxRerequests: Number(formData.maxRerequests),
     };
